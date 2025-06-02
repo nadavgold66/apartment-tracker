@@ -10,6 +10,11 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <!-- Leaflet JavaScript -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
     <style>
         * {
             margin: 0;
@@ -470,6 +475,111 @@
                 gap: 10px;
             }
         }
+
+        /* Map styles */
+        #map {
+            height: 600px;
+            width: 100%;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .map-sidebar {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+        }
+
+        .map-legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border: 2px solid white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .map-stats {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+        .map-stat-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        .leaflet-popup-content {
+            min-width: 200px;
+        }
+
+        .popup-title {
+            font-weight: 600;
+            font-size: 16px;
+            margin-bottom: 10px;
+            color: #2c3e50;
+        }
+
+        .popup-detail {
+            font-size: 14px;
+            margin-bottom: 5px;
+            color: #666;
+        }
+
+        .popup-price {
+            font-size: 18px;
+            font-weight: 600;
+            color: #667eea;
+            margin: 10px 0;
+        }
+
+        .popup-rating {
+            color: #ffd700;
+            margin-bottom: 10px;
+        }
+
+        .popup-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .popup-buttons .btn {
+            padding: 8px 12px;
+            font-size: 12px;
+        }
+
+        .google-maps-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            color: #4285f4;
+            text-decoration: none;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+
+        .google-maps-link:hover {
+            text-decoration: underline;
+        }
     </style>
 </head>
 <body>
@@ -514,6 +624,7 @@
                 <button class="tab active" onclick="switchTab('add')">Add Apartment</button>
                 <button class="tab" onclick="switchTab('list')">View Apartments</button>
                 <button class="tab" onclick="switchTab('compare')">Compare</button>
+                <button class="tab" onclick="switchTab('map')">Map View</button>
             </div>
 
             <!-- Add Apartment Tab -->
@@ -762,6 +873,60 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Map Tab -->
+            <div id="map-tab" class="tab-content">
+                <div class="map-sidebar">
+                    <h3>Map View</h3>
+                    <div class="map-legend">
+                        <div class="legend-item">
+                            <div class="legend-color" style="background-color: #28a745;"></div>
+                            <span>Under ₪4,000</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background-color: #667eea;"></div>
+                            <span>₪4,000 - ₪5,000</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background-color: #fbbf24;"></div>
+                            <span>₪5,000 - ₪6,000</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background-color: #dc3545;"></div>
+                            <span>Above ₪6,000</span>
+                        </div>
+                    </div>
+                    
+                    <div class="filter-section">
+                        <h4>Map Filters</h4>
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="map-filter-visited" onchange="updateMapMarkers()">
+                            <label for="map-filter-visited">Visited Only</label>
+                        </div>
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="map-filter-parking" onchange="updateMapMarkers()">
+                            <label for="map-filter-parking">With Parking</label>
+                        </div>
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="map-filter-elevator" onchange="updateMapMarkers()">
+                            <label for="map-filter-elevator">With Elevator</label>
+                        </div>
+                    </div>
+                    
+                    <div class="map-stats" id="map-stats">
+                        <div class="map-stat-item">
+                            <span>Apartments shown:</span>
+                            <span id="map-count">0</span>
+                        </div>
+                        <div class="map-stat-item">
+                            <span>Average price:</span>
+                            <span id="map-avg-price">₪0</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="map"></div>
+            </div>
         </div>
     </div>
 
@@ -797,6 +962,9 @@
         let sortDirection = 'asc';
         let isOnline = true;
         let currentUser = null;
+        let map = null;
+        let markers = [];
+        let geocodeCache = {};
 
         // ========================================
         // Authentication Functions
@@ -993,6 +1161,8 @@
                 loadApartments();
             } else if (tab === 'compare') {
                 loadComparisonCheckboxes();
+            } else if (tab === 'map') {
+                initializeMap();
             } else if (tab === 'add' && !editingId) {
                 // Reset form only if not editing
                 document.getElementById('apartment-form').reset();
@@ -1195,6 +1365,9 @@
                         ${apt.listingUrl ? `<button class="btn btn-success" onclick="window.open('${apt.listingUrl}', '_blank')">View Listing</button>` : ''}
                         <button class="btn btn-primary" onclick="editApartment('${apt.id}')">Edit</button>
                         <button class="btn btn-danger" onclick="deleteApartment('${apt.id}')">Delete</button>
+                        <a href="${getGoogleMapsLink(apt.address, apt.city)}" target="_blank" class="google-maps-link">
+                            📍 Open in Google Maps
+                        </a>
                     </div>
                 `;
                 list.appendChild(card);
@@ -1255,6 +1428,7 @@
                     <div><strong>Phone:</strong> ${apt.contactPhone || 'N/A'}</div>
                     ${apt.moveInDate ? `<div><strong>Move-in Date:</strong> ${new Date(apt.moveInDate).toLocaleDateString('en-GB')}</div>` : ''}
                     ${apt.listingUrl ? `<div><strong>Listing:</strong> <a href="${apt.listingUrl}" target="_blank" style="color: #667eea;">View Original Listing</a></div>` : ''}
+                    <div style="grid-column: span 2;"><a href="${getGoogleMapsLink(apt.address, apt.city)}" target="_blank" class="google-maps-link">📍 View on Google Maps</a></div>
                 </div>
                 
                 <h3>Ratings</h3>
@@ -1457,6 +1631,9 @@
                         ${apt.listingUrl ? `<button class="btn btn-success" onclick="window.open('${apt.listingUrl}', '_blank')">View Listing</button>` : ''}
                         <button class="btn btn-primary" onclick="editApartment('${apt.id}')">Edit</button>
                         <button class="btn btn-danger" onclick="deleteApartment('${apt.id}')">Delete</button>
+                        <a href="${getGoogleMapsLink(apt.address, apt.city)}" target="_blank" class="google-maps-link">
+                            📍 Open in Google Maps
+                        </a>
                     </div>
                 `;
                 list.appendChild(card);
@@ -1693,7 +1870,160 @@
             }
             return '';
         }
+
+        // ========================================
+        // Map Functions
+        // ========================================
+
+        // Generate Google Maps link
+        function getGoogleMapsLink(address, city) {
+            const query = encodeURIComponent(`${address}, ${city}, Israel`);
+            return `https://www.google.com/maps/search/?api=1&query=${query}`;
+        }
+
+        // Initialize Leaflet map
+        function initializeMap() {
+            // Only initialize once
+            if (!map) {
+                // Center map on Tel Aviv
+                map = L.map('map').setView([32.0853, 34.7818], 12);
+                
+                // Add OpenStreetMap tiles
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '© OpenStreetMap contributors'
+                }).addTo(map);
+            }
+            
+            // Load apartment markers
+            setTimeout(() => {
+                map.invalidateSize();
+                updateMapMarkers();
+            }, 100);
+        }
+
+        // Get marker color based on price
+        function getMarkerColor(price) {
+            if (price < 4000) return '#28a745';
+            if (price < 5000) return '#667eea';
+            if (price < 6000) return '#fbbf24';
+            return '#dc3545';
+        }
+
+        // Geocode address using Nominatim (OpenStreetMap)
+        async function geocodeAddress(address, city) {
+            const fullAddress = `${address}, ${city}, Israel`;
+            
+            // Check cache first
+            if (geocodeCache[fullAddress]) {
+                return geocodeCache[fullAddress];
+            }
+            
+            try {
+                const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(fullAddress)}&limit=1`;
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                if (data && data.length > 0) {
+                    const result = {
+                        lat: parseFloat(data[0].lat),
+                        lng: parseFloat(data[0].lon)
+                    };
+                    geocodeCache[fullAddress] = result;
+                    return result;
+                }
+            } catch (error) {
+                console.error('Geocoding error:', error);
+            }
+            
+            // Fallback to approximate Tel Aviv coordinates with random offset
+            const fallback = {
+                lat: 32.0853 + (Math.random() - 0.5) * 0.1,
+                lng: 34.7818 + (Math.random() - 0.5) * 0.1
+            };
+            geocodeCache[fullAddress] = fallback;
+            return fallback;
+        }
+
+        // Update map markers
+        async function updateMapMarkers() {
+            if (!map) return;
+            
+            // Clear existing markers
+            markers.forEach(marker => map.removeLayer(marker));
+            markers = [];
+            
+            // Get filter states
+            const visitedOnly = document.getElementById('map-filter-visited').checked;
+            const parkingOnly = document.getElementById('map-filter-parking').checked;
+            const elevatorOnly = document.getElementById('map-filter-elevator').checked;
+            
+            const apartmentArray = Object.entries(apartments).map(([id, data]) => ({
+                id,
+                ...data
+            }));
+            
+            // Filter apartments
+            const filtered = apartmentArray.filter(apt => {
+                if (visitedOnly && !apt.visited) return false;
+                if (parkingOnly && !apt.parking) return false;
+                if (elevatorOnly && !apt.elevator) return false;
+                return true;
+            });
+            
+            // Add markers for each apartment
+            let totalPrice = 0;
+            let count = 0;
+            
+            for (const apt of filtered) {
+                const coords = await geocodeAddress(apt.address, apt.city);
+                if (coords) {
+                    const color = getMarkerColor(apt.price);
+                    const avgRating = Object.values(apt.ratings).reduce((a, b) => a + b, 0) / Object.keys(apt.ratings).length;
+                    
+                    // Create custom icon
+                    const icon = L.divIcon({
+                        className: 'custom-marker',
+                        html: `<div style="background-color: ${color}; color: white; padding: 8px 12px; border-radius: 20px; font-weight: bold; white-space: nowrap; box-shadow: 0 2px 6px rgba(0,0,0,0.3);">₪${apt.price.toLocaleString()}</div>`,
+                        iconSize: null
+                    });
+                    
+                    // Create marker
+                    const marker = L.marker([coords.lat, coords.lng], { icon })
+                        .addTo(map)
+                        .bindPopup(`
+                            <div class="popup-content">
+                                <div class="popup-title">${apt.address}</div>
+                                <div class="popup-detail">${apt.city}</div>
+                                <div class="popup-detail">Floor: ${apt.floor || 'N/A'} • ${apt.size || 'N/A'} m²</div>
+                                <div class="popup-detail">
+                                    ${apt.elevator ? '✓ Elevator' : '✗ No Elevator'} • 
+                                    ${apt.parking ? '✓ Parking' : '✗ No Parking'}
+                                </div>
+                                <div class="popup-price">₪${apt.price.toLocaleString()}/month</div>
+                                <div class="popup-rating">${'★'.repeat(Math.round(avgRating))} (${avgRating.toFixed(1)})</div>
+                                <div class="popup-buttons">
+                                    <button class="btn btn-secondary" onclick="viewDetails('${apt.id}')">Details</button>
+                                    <button class="btn btn-primary" onclick="window.open('${getGoogleMapsLink(apt.address, apt.city)}', '_blank')">Google Maps</button>
+                                </div>
+                            </div>
+                        `);
+                    
+                    markers.push(marker);
+                    totalPrice += apt.price;
+                    count++;
+                }
+            }
+            
+            // Update statistics
+            document.getElementById('map-count').textContent = `${count} of ${apartmentArray.length}`;
+            document.getElementById('map-avg-price').textContent = count > 0 ? `₪${Math.round(totalPrice / count).toLocaleString()}` : '₪0';
+            
+            // Fit map to show all markers
+            if (markers.length > 0) {
+                const group = L.featureGroup(markers);
+                map.fitBounds(group.getBounds().pad(0.1));
+            }
+        }
     </script>
 </body>
 </html>
-                
