@@ -219,6 +219,7 @@
             display: flex;
             gap: 5px;
             margin-top: 8px;
+            align-items: center;
         }
 
         .star {
@@ -231,6 +232,21 @@
 
         .star.active {
             color: #ffd700 !important;
+        }
+
+        .clear-rating {
+            margin-left: 10px;
+            padding: 4px 8px;
+            background: #f0f2f5;
+            border: 1px solid #e0e6ed;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .clear-rating:hover {
+            background: #e0e6ed;
         }
 
         .btn {
@@ -293,11 +309,55 @@
             padding: 20px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.05);
             transition: transform 0.3s ease;
+            position: relative;
         }
 
         .apartment-card:hover {
             transform: translateY(-5px);
             box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+
+        .missing-fees-indicator {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 30px;
+            height: 30px;
+            background: #ff6b6b;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 18px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            cursor: help;
+            transition: transform 0.2s ease;
+        }
+
+        .missing-fees-indicator:hover {
+            transform: scale(1.1);
+        }
+
+        .missing-fees-indicator::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            top: -35px;
+            right: 0;
+            background: #333;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s ease;
+        }
+
+        .missing-fees-indicator:hover::after {
+            opacity: 1;
         }
 
         .apartment-header {
@@ -580,6 +640,16 @@
         .google-maps-link:hover {
             text-decoration: underline;
         }
+        
+        .popup-missing-fees {
+            background: #fff5f5;
+            color: #ff6b6b;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            margin: 5px 0;
+        }
     </style>
 </head>
 <body>
@@ -677,6 +747,11 @@
                             <label for="parking">Parking</label>
                         </div>
 
+                        <div class="form-group checkbox-group">
+                            <input type="checkbox" id="sunHeatedWater">
+                            <label for="sunHeatedWater">Sun-heated Water Tank</label>
+                        </div>
+
                         <div class="form-group">
                             <label for="price">Monthly Rent (₪)</label>
                             <input type="number" id="price" required>
@@ -732,6 +807,7 @@
                                 <span class="star" data-value="3">★</span>
                                 <span class="star" data-value="4">★</span>
                                 <span class="star" data-value="5">★</span>
+                                <button type="button" class="clear-rating" onclick="clearRating('condition')">Clear</button>
                             </div>
                         </div>
 
@@ -743,6 +819,7 @@
                                 <span class="star" data-value="3">★</span>
                                 <span class="star" data-value="4">★</span>
                                 <span class="star" data-value="5">★</span>
+                                <button type="button" class="clear-rating" onclick="clearRating('leisureLocation')">Clear</button>
                             </div>
                         </div>
 
@@ -754,6 +831,7 @@
                                 <span class="star" data-value="3">★</span>
                                 <span class="star" data-value="4">★</span>
                                 <span class="star" data-value="5">★</span>
+                                <button type="button" class="clear-rating" onclick="clearRating('workLocation')">Clear</button>
                             </div>
                         </div>
 
@@ -765,6 +843,7 @@
                                 <span class="star" data-value="3">★</span>
                                 <span class="star" data-value="4">★</span>
                                 <span class="star" data-value="5">★</span>
+                                <button type="button" class="clear-rating" onclick="clearRating('areaParking')">Clear</button>
                             </div>
                         </div>
 
@@ -776,6 +855,7 @@
                                 <span class="star" data-value="3">★</span>
                                 <span class="star" data-value="4">★</span>
                                 <span class="star" data-value="5">★</span>
+                                <button type="button" class="clear-rating" onclick="clearRating('noise')">Clear</button>
                             </div>
                         </div>
 
@@ -787,6 +867,7 @@
                                 <span class="star" data-value="3">★</span>
                                 <span class="star" data-value="4">★</span>
                                 <span class="star" data-value="5">★</span>
+                                <button type="button" class="clear-rating" onclick="clearRating('neighbors')">Clear</button>
                             </div>
                         </div>
 
@@ -798,6 +879,7 @@
                                 <span class="star" data-value="3">★</span>
                                 <span class="star" data-value="4">★</span>
                                 <span class="star" data-value="5">★</span>
+                                <button type="button" class="clear-rating" onclick="clearRating('privacy')">Clear</button>
                             </div>
                         </div>
 
@@ -881,19 +963,15 @@
                     <div class="map-legend">
                         <div class="legend-item">
                             <div class="legend-color" style="background-color: #28a745;"></div>
-                            <span>Under ₪4,000</span>
+                            <span>₪4,500 - ₪5,500</span>
                         </div>
                         <div class="legend-item">
-                            <div class="legend-color" style="background-color: #667eea;"></div>
-                            <span>₪4,000 - ₪5,000</span>
-                        </div>
-                        <div class="legend-item">
-                            <div class="legend-color" style="background-color: #fbbf24;"></div>
-                            <span>₪5,000 - ₪6,000</span>
+                            <div class="legend-color" style="background-color: #ffa500;"></div>
+                            <span>₪5,500 - ₪6,500</span>
                         </div>
                         <div class="legend-item">
                             <div class="legend-color" style="background-color: #dc3545;"></div>
-                            <span>Above ₪6,000</span>
+                            <span>Above ₪6,500</span>
                         </div>
                     </div>
                     
@@ -1179,6 +1257,16 @@
             }
         }
 
+        // Clear rating function
+        function clearRating(ratingType) {
+            const group = document.querySelector(`[data-rating="${ratingType}"]`);
+            group.removeAttribute('data-value');
+            group.querySelectorAll('.star').forEach(star => {
+                star.classList.remove('active');
+                star.style.color = '#ddd';
+            });
+        }
+
         // Rating system
         function setupRatingListeners() {
             document.querySelectorAll('.rating-group').forEach(group => {
@@ -1265,6 +1353,7 @@
                     shelter: document.getElementById('shelter').checked,
                     elevator: document.getElementById('elevator').checked,
                     parking: document.getElementById('parking').checked,
+                    sunHeatedWater: document.getElementById('sunHeatedWater').checked,
                     price: parseInt(document.getElementById('price').value),
                     arnona: parseInt(document.getElementById('arnona').value) || 0,
                     vaad: parseInt(document.getElementById('vaad').value) || 0,
@@ -1317,6 +1406,11 @@
             });
         }
 
+        // Check if apartment has missing fees
+        function hasMissingFees(apt) {
+            return !apt.arnona || apt.arnona === 0 || !apt.vaad || apt.vaad === 0;
+        }
+
         // Load apartments
         function loadApartments() {
             const list = document.getElementById('apartments-list');
@@ -1335,10 +1429,12 @@
             apartmentArray.forEach(apt => {
                 const totalCost = apt.price + apt.arnona + apt.vaad;
                 const avgRating = Object.values(apt.ratings).reduce((a, b) => a + b, 0) / Object.keys(apt.ratings).length;
+                const missingFees = hasMissingFees(apt);
                 
                 const card = document.createElement('div');
                 card.className = 'apartment-card';
                 card.innerHTML = `
+                    ${missingFees ? '<div class="missing-fees-indicator" data-tooltip="Missing Arnona or Building Committee fees">!</div>' : ''}
                     <div class="apartment-header">
                         <div>
                             <div class="apartment-title">${apt.address}</div>
@@ -1351,6 +1447,7 @@
                         <div class="detail-item">Size: ${apt.size || 'N/A'} m²</div>
                         <div class="detail-item">${apt.elevator ? '✓ Elevator' : '✗ No Elevator'}</div>
                         <div class="detail-item">${apt.parking ? '✓ Parking' : '✗ No Parking'}</div>
+                        <div class="detail-item">${apt.sunHeatedWater ? '✓ Sun-heated Water' : '✗ No Sun-heated Water'}</div>
                         ${apt.moveInDate ? `<div class="detail-item">Move-in: ${new Date(apt.moveInDate).toLocaleDateString('en-GB')}</div>` : ''}
                     </div>
                     <div class="total-cost">Total Monthly: ₪${totalCost}</div>
@@ -1422,6 +1519,7 @@
                     <div><strong>Shelter:</strong> ${apt.shelter ? 'Yes' : 'No'}</div>
                     <div><strong>Elevator:</strong> ${apt.elevator ? 'Yes' : 'No'}</div>
                     <div><strong>Parking:</strong> ${apt.parking ? 'Yes' : 'No'}</div>
+                    <div><strong>Sun-heated Water:</strong> ${apt.sunHeatedWater ? 'Yes' : 'No'}</div>
                     <div><strong>Through Broker:</strong> ${apt.broker ? 'Yes' : 'No'}</div>
                     <div><strong>Visited:</strong> ${apt.visited ? 'Yes ✓' : 'No ⏳'}</div>
                     <div><strong>Contact:</strong> ${apt.contactName || 'N/A'}</div>
@@ -1516,6 +1614,7 @@
             document.getElementById('shelter').checked = apt.shelter;
             document.getElementById('elevator').checked = apt.elevator;
             document.getElementById('parking').checked = apt.parking;
+            document.getElementById('sunHeatedWater').checked = apt.sunHeatedWater || false;
             document.getElementById('price').value = apt.price;
             document.getElementById('arnona').value = apt.arnona || '';
             document.getElementById('vaad').value = apt.vaad || '';
@@ -1602,10 +1701,12 @@
             filtered.forEach(apt => {
                 const totalCost = apt.price + apt.arnona + apt.vaad;
                 const avgRating = Object.values(apt.ratings).reduce((a, b) => a + b, 0) / Object.keys(apt.ratings).length;
+                const missingFees = hasMissingFees(apt);
                 
                 const card = document.createElement('div');
                 card.className = 'apartment-card';
                 card.innerHTML = `
+                    ${missingFees ? '<div class="missing-fees-indicator" data-tooltip="Missing Arnona or Building Committee fees">!</div>' : ''}
                     <div class="apartment-header">
                         <div>
                             <div class="apartment-title">${apt.address}</div>
@@ -1644,7 +1745,7 @@
         function exportToCSV() {
             const headers = [
                 'Address', 'City', 'Floor', 'Size (m²)', 'Divided', 'Parking Permit',
-                'Shelter', 'Elevator', 'Parking', 'Price', 'Arnona', 'Vaad', 'Total Monthly',
+                'Shelter', 'Elevator', 'Parking', 'Sun-heated Water', 'Price', 'Arnona', 'Vaad', 'Total Monthly',
                 'Broker', 'Visited', 'Contact Name', 'Contact Phone', 'Move-in Date', 'Listing URL',
                 'Condition Rating', 'Leisure Location Rating', 'Work Location Rating',
                 'Area Parking Rating', 'Noise Rating', 'Neighbors Rating', 'Privacy Rating',
@@ -1670,6 +1771,7 @@
                     apt.shelter ? 'Yes' : 'No',
                     apt.elevator ? 'Yes' : 'No',
                     apt.parking ? 'Yes' : 'No',
+                    apt.sunHeatedWater ? 'Yes' : 'No',
                     apt.price,
                     apt.arnona,
                     apt.vaad,
@@ -1755,6 +1857,7 @@
                                 <th>Visited</th>
                                 <th>Elevator</th>
                                 <th>Parking</th>
+                                <th>Sun Water</th>
                                 <th>Condition</th>
                                 <th>Leisure</th>
                                 <th>Work</th>
@@ -1787,6 +1890,7 @@
                         <td>${apt.visited ? '✓' : '⏳'}</td>
                         <td>${apt.elevator ? '✓' : '✗'}</td>
                         <td>${apt.parking ? '✓' : '✗'}</td>
+                        <td>${apt.sunHeatedWater ? '✓' : '✗'}</td>
                         <td>${'★'.repeat(apt.ratings.condition || 0)}</td>
                         <td>${'★'.repeat(apt.ratings.leisureLocation || 0)}</td>
                         <td>${'★'.repeat(apt.ratings.workLocation || 0)}</td>
@@ -1903,10 +2007,10 @@
 
         // Get marker color based on price
         function getMarkerColor(price) {
-            if (price < 4000) return '#28a745';
-            if (price < 5000) return '#667eea';
-            if (price < 6000) return '#fbbf24';
-            return '#dc3545';
+            if (price >= 4500 && price <= 5500) return '#28a745';
+            if (price > 5500 && price <= 6500) return '#ffa500';
+            if (price > 6500) return '#dc3545';
+            return '#667eea'; // Default color for prices below 4500
         }
 
         // Geocode address using Nominatim (OpenStreetMap)
@@ -1979,6 +2083,7 @@
                 if (coords) {
                     const color = getMarkerColor(apt.price);
                     const avgRating = Object.values(apt.ratings).reduce((a, b) => a + b, 0) / Object.keys(apt.ratings).length;
+                    const missingFees = hasMissingFees(apt);
                     
                     // Create custom icon
                     const icon = L.divIcon({
@@ -1999,6 +2104,7 @@
                                     ${apt.elevator ? '✓ Elevator' : '✗ No Elevator'} • 
                                     ${apt.parking ? '✓ Parking' : '✗ No Parking'}
                                 </div>
+                                ${missingFees ? '<div class="popup-missing-fees">! Missing Arnona or Building Committee fees</div>' : ''}
                                 <div class="popup-price">₪${apt.price.toLocaleString()}/month</div>
                                 <div class="popup-rating">${'★'.repeat(Math.round(avgRating))} (${avgRating.toFixed(1)})</div>
                                 <div class="popup-buttons">
