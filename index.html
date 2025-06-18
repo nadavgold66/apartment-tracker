@@ -1,818 +1,4 @@
-<script>
-        // ========================================
-        // Firebase Configuration
-        // ========================================
-        
-        const firebaseConfig = {
-            apiKey: "AIzaSyBl1t5NahZ44fToeiGa78qSvuhvPwzySAc",
-            authDomain: "app-tracker-7d451.firebaseapp.com",
-            databaseURL: "https://app-tracker-7d451-default-rtdb.firebaseio.com",
-            projectId: "app-tracker-7d451",
-            storageBucket: "app-tracker-7d451.firebasestorage.app",
-            messagingSenderId: "754427444557",
-            appId: "1:754427444557:web:5b7b41b7e63acb588e0b04",
-            measurementId: "G-KLY0FQ6L62"
-        };
-
-        // Initialize Firebase
-        firebase.initializeApp(firebaseConfig);
-        const database = firebase.database();
-        const auth = firebase.auth();
-        
-        // ========================================
-        // Global Variables
-        // ========================================
-        
-        let apartments = {};
-        let currentImages = [];
-        let editingId = null;
-        let sortColumn = null;
-        let sortDirection = 'asc';
-        let isOnline = true;
-        let currentUser = null;
-        let map = null;
-        let markers = [];
-        let geocodeCache = {};
-
-        // ========================================
-        // Authentication Functions
-        // ========================================
-        
-        // Monitor authentication state
-        auth.onAuthStateChanged((user) => {
-            currentUser = user;
-            if (user) {
-                // User is signed in
-                document.getElementById('auth-container').style.display = 'none';
-                document.getElementById('main-content').classList.add('authenticated');
-                document.getElementById('user-info').style.display = 'flex';
-                document.getElementById('user-email').textContent = user.email;
-                
-                // Show user avatar if available
-                if (user.photoURL) {
-                    const avatar = document.getElementById('user-avatar');
-                    avatar.src = user.photoURL;
-                    avatar.style.display = 'inline-block';
-                }
-                
-                // Setup database listeners for authenticated user
-                setupDatabaseListeners();
-                updateSyncStatus(true);
-                showMessage('success', `Welcome back, ${user.displayName || user.email}!`);
-            } else {
-                // User is signed out
-                document.getElementById('auth-container').style.display = 'block';
-                document.getElementById('main-content').classList.remove('authenticated');
-                document.getElementById('user-info').style.display = 'none';
-                document.getElementById('user-avatar').style.display = 'none';
-                apartments = {};
-                updateSyncStatus(false);
-            }
-        });
-
-        // Sign in with Google
-        async function signInWithGoogle() {
-            const provider = new firebase.auth.GoogleAuthProvider();
-            
-            try {
-                const result = await auth.signInWithPopup(provider);
-            } catch (error) {
-                console.error('Google sign-in error:', error);
-                let errorMessage = 'Sign in failed: ';
-                switch (error.code) {
-                    case 'auth/popup-closed-by-user':
-                        errorMessage += 'Sign-in popup was closed';
-                        break;
-                    case 'auth/popup-blocked':
-                        errorMessage += 'Sign-in popup was blocked by browser';
-                        break;
-                    case 'auth/cancelled-popup-request':
-                        errorMessage += 'Another sign-in request is already in progress';
-                        break;
-                    case 'auth/network-request-failed':
-                        errorMessage += 'Network error. Please check your connection';
-                        break;
-                    case 'auth/unauthorized-domain':
-                        errorMessage += 'This domain is not authorized for sign-in. Contact the developer.';
-                        break;
-                    default:
-                        errorMessage += error.message;
-                }
-                showMessage('error', errorMessage);
-            }
-        }
-
-        // Sign out user
-        async function signOut() {
-            try {
-                await auth.signOut();
-                showMessage('success', 'Signed out successfully');
-            } catch (error) {
-                showMessage('error', 'Sign out failed: ' + error.message);
-            }
-        }
-
-        // ========================================
-        // Firebase Database Functions
-        // ========================================
-        
-        // Listen for apartments changes (only for authenticated user)
-        function setupDatabaseListeners() {
-            if (!currentUser) return;
-            
-            const userApartmentsRef = database.ref(`users/${currentUser.uid}/apartments`);
-            
-            userApartmentsRef.on('value', (snapshot) => {
-                apartments = snapshot.val() || {};
-                loadApartments();
-                updateCityFilters();
-                updateSyncStatus(true);
-            }, (error) => {
-                showMessage('error', 'Failed to load apartments: ' + error.message);
-                updateSyncStatus(false);
-            });
-            
-            // Monitor connection status
-            database.ref('.info/connected').on('value', (snapshot) => {
-                isOnline = snapshot.val() === true;
-                updateSyncStatus(isOnline && currentUser);
-            });
-        }
-
-        // Update sync status indicator
-        function updateSyncStatus(online) {
-            const indicator = document.getElementById('sync-indicator');
-            const text = document.getElementById('sync-text');
-            
-            if (online && currentUser) {
-                indicator.classList.remove('offline');
-                text.textContent = 'Synced with cloud';
-            } else if (currentUser) {
-                indicator.classList.add('offline');
-                text.textContent = 'Offline mode';
-            } else {
-                indicator.classList.add('offline');
-                text.textContent = 'Not authenticated';
-            }
-        }
-
-        // Save apartment to Firebase (user-specific)
-        function saveApartmentToFirebase(apartmentData, apartmentId = null) {
-            if (!currentUser) {
-                throw new Error('User not authenticated');
-            }
-            
-            const userApartmentsRef = database.ref(`users/${currentUser.uid}/apartments`);
-            
-            if (apartmentId) {
-                // Update existing
-                return userApartmentsRef.child(apartmentId).set(apartmentData);
-            } else {
-                // Add new
-                return userApartmentsRef.push(apartmentData);
-            }
-        }
-
-        // Delete apartment from Firebase (user-specific)
-        function deleteApartmentFromFirebase(apartmentId) {
-            if (!currentUser) {
-                throw new Error('User not authenticated');
-            }
-            
-            return database.ref(`users/${currentUser.uid}/apartments/${apartmentId}`).remove();
-        }
-
-        // ========================================
-        // Initialize Application
-        // ========================================
-        
-        document.addEventListener('DOMContentLoaded', function() {
-            setupRatingListeners();
-            setupFormListener();
-            
-            // Enable offline persistence
-            firebase.database().goOffline();
-            firebase.database().goOnline();
-        });
-
-        // ========================================
-        // UI Functions
-        // ========================================
-        
-        // Show message
-        function showMessage(type, message) {
-            const messageContainer = document.getElementById('message-container');
-            const className = type === 'error' ? 'error-message' : 'success-message';
-            const icon = type === 'error' ? '❌' : '✅';
-            messageContainer.innerHTML = `<div class="${className}">${icon} ${message}</div>`;
-            setTimeout(() => {
-                messageContainer.innerHTML = '';
-            }, 5000);
-        }
-
-        // Update city filters
-        function updateCityFilters() {
-            const cities = [...new Set(Object.values(apartments).map(apt => apt.city))].sort();
-            
-            // Update apartment list filter
-            const filterCity = document.getElementById('filter-city');
-            const currentFilterValue = filterCity.value;
-            filterCity.innerHTML = '<option value="">All Cities</option>';
-            cities.forEach(city => {
-                filterCity.innerHTML += `<option value="${city}">${city}</option>`;
-            });
-            filterCity.value = currentFilterValue;
-            
-            // Update map filter
-            const mapFilterCity = document.getElementById('map-filter-city');
-            const currentMapValue = mapFilterCity.value;
-            mapFilterCity.innerHTML = '<option value="">All Cities</option>';
-            cities.forEach(city => {
-                mapFilterCity.innerHTML += `<option value="${city}">${city}</option>`;
-            });
-            mapFilterCity.value = currentMapValue;
-        }
-
-        // Tab switching
-        function switchTab(tab) {
-            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-            document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
-            
-            const tabButtons = document.querySelectorAll('.tab');
-            const tabIndex = ['add', 'list', 'shortlist', 'compare', 'map'].indexOf(tab);
-            if (tabIndex >= 0) {
-                tabButtons[tabIndex].classList.add('active');
-            }
-            
-            document.getElementById(`${tab}-tab`).classList.add('active');
-            
-            if (tab === 'list') {
-                loadApartments();
-            } else if (tab === 'shortlist') {
-                loadShortlist();
-            } else if (tab === 'compare') {
-                loadComparisonCheckboxes();
-            } else if (tab === 'map') {
-                initializeMap();
-            } else if (tab === 'add' && !editingId) {
-                // Reset form only if not editing
-                document.getElementById('apartment-form').reset();
-                currentImages = [];
-                document.getElementById('image-preview').innerHTML = '';
-                document.querySelectorAll('.rating-group').forEach(group => {
-                    group.removeAttribute('data-value');
-                    group.querySelectorAll('.star').forEach(star => {
-                        star.classList.remove('active');
-                        star.style.color = '#e5e7eb';
-                    });
-                });
-                document.querySelector('#apartment-form button[type="submit"]').textContent = 'Save Apartment';
-            }
-        }
-
-        // Clear rating function
-        function clearRating(ratingType) {
-            const group = document.querySelector(`[data-rating="${ratingType}"]`);
-            group.removeAttribute('data-value');
-            group.querySelectorAll('.star').forEach(star => {
-                star.classList.remove('active');
-                star.style.color = '#e5e7eb';
-            });
-        }
-
-        // Rating system
-        function setupRatingListeners() {
-            document.querySelectorAll('.rating-group').forEach(group => {
-                const stars = group.querySelectorAll('.star');
-                stars.forEach((star, index) => {
-                    star.addEventListener('click', () => {
-                        const rating = index + 1;
-                        group.setAttribute('data-value', rating);
-                        stars.forEach((s, i) => {
-                            if (i < rating) {
-                                s.classList.add('active');
-                            } else {
-                                s.classList.remove('active');
-                            }
-                        });
-                    });
-                    
-                    // Add hover effect
-                    star.addEventListener('mouseenter', () => {
-                        stars.forEach((s, i) => {
-                            if (i <= index) {
-                                s.style.color = '#fbbf24';
-                            } else {
-                                s.style.color = '#e5e7eb';
-                            }
-                        });
-                    });
-                });
-                
-                // Reset hover effect when mouse leaves the rating group
-                group.addEventListener('mouseleave', () => {
-                    stars.forEach((s, i) => {
-                        const currentRating = parseInt(group.getAttribute('data-value')) || 0;
-                        if (i < currentRating) {
-                            s.style.color = '#fbbf24';
-                        } else {
-                            s.style.color = '#e5e7eb';
-                        }
-                    });
-                });
-            });
-        }
-
-        // Image handling
-        function handleImageUpload(event) {
-            const files = Array.from(event.target.files).slice(0, 5);
-            currentImages = [];
-            const preview = document.getElementById('image-preview');
-            preview.innerHTML = '';
-            
-            files.forEach(file => {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    currentImages.push(e.target.result);
-                    const img = document.createElement('img');
-                    img.src = e.target.result;
-                    preview.appendChild(img);
-                };
-                reader.readAsDataURL(file);
-            });
-        }
-
-        // Form submission
-        function setupFormListener() {
-            document.getElementById('apartment-form').addEventListener('submit', async function(e) {
-                e.preventDefault();
-                
-                if (!currentUser) {
-                    showMessage('error', 'You must be signed in to save apartments');
-                    return;
-                }
-                
-                const submitBtn = document.getElementById('submit-btn');
-                submitBtn.disabled = true;
-                submitBtn.textContent = editingId ? 'Updating...' : 'Saving...';
-                
-                const formData = {
-                    address: document.getElementById('address').value,
-                    city: document.getElementById('city').value,
-                    floor: document.getElementById('floor').value,
-                    size: document.getElementById('size').value,
-                    divided: document.getElementById('divided').checked,
-                    parkingPermit: document.getElementById('parkingPermit').checked,
-                    shelter: document.getElementById('shelter').checked,
-                    elevator: document.getElementById('elevator').checked,
-                    parking: document.getElementById('parking').checked,
-                    sunHeatedWater: document.getElementById('sunHeatedWater').checked,
-                    price: parseInt(document.getElementById('price').value),
-                    arnona: parseInt(document.getElementById('arnona').value) || 0,
-                    vaad: parseInt(document.getElementById('vaad').value) || 0,
-                    broker: document.getElementById('broker').checked,
-                    visited: document.getElementById('visited').checked,
-                    contactName: document.getElementById('contactName').value,
-                    contactPhone: document.getElementById('contactPhone').value,
-                    moveInDate: document.getElementById('moveInDate').value,
-                    listingUrl: document.getElementById('listingUrl').value,
-                    notes: document.getElementById('notes').value,
-                    images: currentImages.length > 0 ? currentImages : (editingId && apartments[editingId] ? apartments[editingId].images : []),
-                    ratings: {
-                        condition: parseInt(document.querySelector('[data-rating="condition"]').getAttribute('data-value')) || 0,
-                        leisureLocation: parseInt(document.querySelector('[data-rating="leisureLocation"]').getAttribute('data-value')) || 0,
-                        workLocation: parseInt(document.querySelector('[data-rating="workLocation"]').getAttribute('data-value')) || 0,
-                        areaParking: parseInt(document.querySelector('[data-rating="areaParking"]').getAttribute('data-value')) || 0,
-                        noise: parseInt(document.querySelector('[data-rating="noise"]').getAttribute('data-value')) || 0,
-                        neighbors: parseInt(document.querySelector('[data-rating="neighbors"]').getAttribute('data-value')) || 0,
-                        privacy: parseInt(document.querySelector('[data-rating="privacy"]').getAttribute('data-value')) || 0
-                    },
-                    shortlisted: editingId && apartments[editingId] ? apartments[editingId].shortlisted : false,
-                    irrelevant: editingId && apartments[editingId] ? apartments[editingId].irrelevant : false,
-                    visitedButNotInterested: editingId && apartments[editingId] ? apartments[editingId].visitedButNotInterested : false,
-                    createdAt: editingId && apartments[editingId] ? apartments[editingId].createdAt : Date.now(),
-                    updatedAt: Date.now()
-                };
-                
-                try {
-                    await saveApartmentToFirebase(formData, editingId);
-                    showMessage('success', editingId ? 'Apartment updated successfully!' : 'Apartment saved successfully!');
-                    
-                    // Reset form
-                    this.reset();
-                    currentImages = [];
-                    editingId = null;
-                    document.getElementById('image-preview').innerHTML = '';
-                    
-                    // Reset all ratings
-                    document.querySelectorAll('.rating-group').forEach(group => {
-                        group.removeAttribute('data-value');
-                        group.querySelectorAll('.star').forEach(star => {
-                            star.classList.remove('active');
-                            star.style.color = '#e5e7eb';
-                        });
-                    });
-                    
-                    submitBtn.textContent = 'Save Apartment';
-                } catch (error) {
-                    showMessage('error', 'Failed to save apartment: ' + error.message);
-                } finally {
-                    submitBtn.disabled = false;
-                }
-            });
-        }
-
-        // Check if apartment has missing fees
-        function hasMissingFees(apt) {
-            return !apt.arnona || apt.arnona === 0 || !apt.vaad || apt.vaad === 0;
-        }
-
-        // Toggle shortlist status
-        async function toggleShortlist(id) {
-            const apt = apartments[id];
-            if (!apt) return;
-            
-            apt.shortlisted = !apt.shortlisted;
-            apt.updatedAt = Date.now();
-            
-            try {
-                await saveApartmentToFirebase(apt, id);
-                showMessage('success', apt.shortlisted ? 'Added to shortlist!' : 'Removed from shortlist');
-                loadApartments();
-                if (document.getElementById('shortlist-tab').classList.contains('active')) {
-                    loadShortlist();
-                }
-            } catch (error) {
-                showMessage('error', 'Failed to update shortlist: ' + error.message);
-            }
-        }
-
-        // Toggle irrelevant status
-        async function toggleIrrelevant(id) {
-            const apt = apartments[id];
-            if (!apt) return;
-            
-            apt.irrelevant = !apt.irrelevant;
-            if (apt.irrelevant) {
-                apt.shortlisted = false;
-                apt.visitedButNotInterested = false;
-            }
-            apt.updatedAt = Date.now();
-            
-            try {
-                await saveApartmentToFirebase(apt, id);
-                showMessage('success', apt.irrelevant ? 'Marked as irrelevant' : 'Marked as relevant');
-                loadApartments();
-                if (document.getElementById('shortlist-tab').classList.contains('active')) {
-                    loadShortlist();
-                }
-            } catch (error) {
-                showMessage('error', 'Failed to update status: ' + error.message);
-            }
-        }
-
-        // Mark as visited but not interested
-        async function markVisitedNotInterested(id) {
-            const apt = apartments[id];
-            if (!apt) return;
-            
-            apt.visited = true;
-            apt.visitedButNotInterested = true;
-            apt.shortlisted = false;
-            apt.updatedAt = Date.now();
-            
-            try {
-                await saveApartmentToFirebase(apt, id);
-                showMessage('success', 'Marked as visited but not interested');
-                loadApartments();
-                if (document.getElementById('shortlist-tab').classList.contains('active')) {
-                    loadShortlist();
-                }
-            } catch (error) {
-                showMessage('error', 'Failed to update status: ' + error.message);
-            }
-        }
-
-        // Mark as visited and interested
-        async function markVisitedInterested(id) {
-            const apt = apartments[id];
-            if (!apt) return;
-            
-            apt.visited = true;
-            apt.visitedButNotInterested = false;
-            apt.shortlisted = true;
-            apt.irrelevant = false;
-            apt.updatedAt = Date.now();
-            
-            try {
-                await saveApartmentToFirebase(apt, id);
-                showMessage('success', 'Marked as visited and interested!');
-                loadApartments();
-                if (document.getElementById('shortlist-tab').classList.contains('active')) {
-                    loadShortlist();
-                }
-            } catch (error) {
-                showMessage('error', 'Failed to update status: ' + error.message);
-            }
-        }
-
-        // Save quick notes from shortlist
-        async function saveQuickNotes(id) {
-            const apt = apartments[id];
-            if (!apt) return;
-            
-            const notesTextarea = document.getElementById(`notes-${id}`);
-            apt.notes = notesTextarea.value;
-            apt.updatedAt = Date.now();
-            
-            try {
-                await saveApartmentToFirebase(apt, id);
-                showMessage('success', 'Notes saved!');
-            } catch (error) {
-                showMessage('error', 'Failed to save notes: ' + error.message);
-            }
-        }
-
-        // Load apartments
-        function loadApartments() {
-            const list = document.getElementById('apartments-list');
-            list.innerHTML = '';
-            
-            const apartmentArray = Object.entries(apartments).map(([id, data]) => ({
-                id,
-                ...data
-            }));
-            
-            if (apartmentArray.length === 0) {
-                list.innerHTML = '<div class="empty-state"><div class="empty-state-icon">🏠</div><div class="empty-state-text">No apartments yet</div><div class="empty-state-subtext">Add your first apartment to get started!</div></div>';
-                return;
-            }
-            
-            // Apply default filter to hide irrelevant apartments
-            const relevanceFilter = document.getElementById('filter-relevance').value || 'relevant';
-            const filteredApartments = relevanceFilter === 'relevant' 
-                ? apartmentArray.filter(apt => !apt.irrelevant)
-                : apartmentArray;
-            
-            if (filteredApartments.length === 0) {
-                list.innerHTML = '<div class="empty-state"><div class="empty-state-icon">🔍</div><div class="empty-state-text">No apartments match your filters</div><div class="empty-state-subtext">Try adjusting your filter settings</div></div>';
-                return;
-            }
-            
-            filteredApartments.forEach(apt => {
-                const totalCost = apt.price + apt.arnona + apt.vaad;
-                const avgRating = Object.values(apt.ratings).reduce((a, b) => a + b, 0) / Object.keys(apt.ratings).length;
-                const missingFees = hasMissingFees(apt);
-                
-                const card = document.createElement('div');
-                card.className = `apartment-card ${apt.shortlisted ? 'shortlisted' : ''} ${apt.irrelevant ? 'irrelevant' : ''}`;
-                
-                let statusBadges = '';
-                if (apt.shortlisted && !apt.visited) {
-                    statusBadges += '<span class="status-badge shortlist">⭐ Shortlisted</span>';
-                }
-                if (apt.visited && apt.shortlisted && !apt.visitedButNotInterested) {
-                    statusBadges += '<span class="status-badge visited-interested">✅ Visited & Interested</span>';
-                }
-                if (apt.visitedButNotInterested) {
-                    statusBadges += '<span class="status-badge visited-not-interested">❌ Not Interested</span>';
-                }
-                if (apt.irrelevant) {
-                    statusBadges += '<span class="status-badge irrelevant">🚫 Irrelevant</span>';
-                }
-                
-                card.innerHTML = `
-                    ${missingFees ? '<div class="missing-fees-indicator" data-tooltip="Missing Arnona or Building Committee fees">!</div>' : ''}
-                    ${statusBadges ? `<div class="status-badges">${statusBadges}</div>` : ''}
-                    <div class="apartment-header">
-                        <div class="apartment-title">${apt.address}</div>
-                        <div class="apartment-city">📍 ${apt.city} ${apt.visited ? '<span style="color: #10b981;">✓ Visited</span>' : '<span style="color: #f59e0b;">⏳ Not visited</span>'}</div>
-                    </div>
-                    <div class="apartment-price">₪${apt.price.toLocaleString()}</div>
-                    <div class="apartment-details">
-                        <div class="detail-item"><span class="detail-icon">🏢</span> Floor: ${apt.floor || 'N/A'}</div>
-                        <div class="detail-item"><span class="detail-icon">📐</span> ${apt.size || 'N/A'} m²</div>
-                        <div class="detail-item">${apt.elevator ? '<span style="color: #10b981;">✓</span>' : '<span style="color: #ef4444;">✗</span>'} Elevator</div>
-                        <div class="detail-item">${apt.parking ? '<span style="color: #10b981;">✓</span>' : '<span style="color: #ef4444;">✗</span>'} Parking</div>
-                        <div class="detail-item">${apt.sunHeatedWater ? '<span style="color: #10b981;">✓</span>' : '<span style="color: #ef4444;">✗</span>'} Sun Water</div>
-                        ${apt.moveInDate ? `<div class="detail-item"><span class="detail-icon">📅</span> ${new Date(apt.moveInDate).toLocaleDateString('en-GB')}</div>` : ''}
-                    </div>
-                    <div class="total-cost">💰 Total Monthly: ₪${totalCost.toLocaleString()}</div>
-                    <div class="rating-summary">
-                        <div class="rating-item">
-                            <span>Average Rating</span>
-                            <span class="rating-stars">${'★'.repeat(Math.round(avgRating))} (${avgRating.toFixed(1)})</span>
-                        </div>
-                    </div>
-                    <div class="apartment-actions">
-                        <button class="btn btn-sm btn-secondary" onclick="viewDetails('${apt.id}')">👁️ Details</button>
-                        ${apt.listingUrl ? `<button class="btn btn-sm btn-success" onclick="window.open('${apt.listingUrl}', '_blank')">🔗 Listing</button>` : ''}
-                        <button class="btn btn-sm btn-primary" onclick="editApartment('${apt.id}')">✏️ Edit</button>
-                        <button class="btn btn-sm ${apt.shortlisted ? 'btn-warning' : 'btn-outline'}" onclick="toggleShortlist('${apt.id}')">${apt.shortlisted ? '⭐ Shortlisted' : '☆ Shortlist'}</button>
-                        <button class="btn btn-sm btn-danger" onclick="deleteApartment('${apt.id}')">🗑️</button>
-                        <a href="${getGoogleMapsLink(apt.address, apt.city)}" target="_blank" class="google-maps-link">📍 Maps</a>
-                    </div>
-                `;
-                list.appendChild(card);
-            });
-        }
-
-        // Load shortlist
-        function loadShortlist() {
-            const toVisitList = document.getElementById('shortlist-to-visit');
-            const visitedList = document.getElementById('shortlist-visited');
-            
-            const shortlistedApts = Object.entries(apartments)
-                .filter(([id, apt]) => apt.shortlisted && !apt.irrelevant)
-                .map(([id, data]) => ({ id, ...data }));
-            
-            const toVisit = shortlistedApts.filter(apt => !apt.visited);
-            const visitedInterested = shortlistedApts.filter(apt => apt.visited && !apt.visitedButNotInterested);
-            
-            // Update counts
-            document.getElementById('to-visit-count').textContent = toVisit.length;
-            document.getElementById('visited-considering-count').textContent = visitedInterested.length;
-            
-            // Render to visit list
-            if (toVisit.length === 0) {
-                toVisitList.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📭</div><div class="empty-state-text">No apartments to visit yet</div><div class="empty-state-subtext">Add apartments to your shortlist from the main list</div></div>';
-            } else {
-                toVisitList.innerHTML = '';
-                toVisit.forEach(apt => {
-                    const totalCost = apt.price + apt.arnona + apt.vaad;
-                    const card = document.createElement('div');
-                    card.className = 'shortlist-card';
-                    card.innerHTML = `
-                        <div class="apartment-header">
-                            <div class="apartment-title">${apt.address}</div>
-                            <div class="apartment-city">📍 ${apt.city}</div>
-                        </div>
-                        <div class="shortlist-info">
-                            <div class="info-row">
-                                <span class="info-label">💰 Total Cost:</span>
-                                <span style="font-weight: 700; color: #667eea;">₪${totalCost.toLocaleString()}/month</span>
-                            </div>
-                            <div class="info-row">
-                                <span class="info-label">📅 Move-in:</span>
-                                <span>${apt.moveInDate ? new Date(apt.moveInDate).toLocaleDateString('en-GB') : 'Not specified'}</span>
-                            </div>
-                            ${apt.listingUrl ? `<div class="info-row">
-                                <span class="info-label">🔗 Listing:</span>
-                                <a href="${apt.listingUrl}" target="_blank" style="color: #667eea;">View Original</a>
-                            </div>` : ''}
-                        </div>
-                        ${(apt.contactName || apt.contactPhone) ? `
-                            <div class="contact-details">
-                                <div style="font-weight: 600; margin-bottom: 8px;">📞 Contact Information</div>
-                                ${apt.contactName ? `<div class="info-row"><span class="info-label">Name:</span><span>${apt.contactName}</span></div>` : ''}
-                                ${apt.contactPhone ? `<div class="info-row"><span class="info-label">Phone:</span><a href="tel:${apt.contactPhone}" style="color: #667eea; font-weight: 600;">${apt.contactPhone}</a></div>` : ''}
-                            </div>
-                        ` : ''}
-                        <div class="quick-notes">
-                            <label style="font-size: 14px; font-weight: 600; margin-bottom: 4px; display: block;">📝 Quick Notes:</label>
-                            <textarea id="notes-${apt.id}" placeholder="Add notes about contact or visit...">${apt.notes || ''}</textarea>
-                            <button class="btn btn-sm btn-primary" style="margin-top: 8px;" onclick="saveQuickNotes('${apt.id}')">💾 Save Notes</button>
-                        </div>
-                        <div class="apartment-actions" style="margin-top: 12px;">
-                            <button class="btn btn-sm btn-success" onclick="markVisitedInterested('${apt.id}')">✅ Visited & Interested</button>
-                            <button class="btn btn-sm btn-danger" onclick="markVisitedNotInterested('${apt.id}')">❌ Not Interested</button>
-                            <button class="btn btn-sm btn-secondary" onclick="viewDetails('${apt.id}')">👁️ Full Details</button>
-                        </div>
-                    `;
-                    toVisitList.appendChild(card);
-                });
-            }
-            
-            // Render visited and interested list
-            if (visitedInterested.length === 0) {
-                visitedList.innerHTML = '<div class="empty-state"><div class="empty-state-icon">🏠</div><div class="empty-state-text">No visited apartments under consideration</div><div class="empty-state-subtext">Visit apartments and mark them as interested</div></div>';
-            } else {
-                visitedList.innerHTML = '';
-                visitedInterested.forEach(apt => {
-                    const totalCost = apt.price + apt.arnona + apt.vaad;
-                    const avgRating = Object.values(apt.ratings).reduce((a, b) => a + b, 0) / Object.keys(apt.ratings).length;
-                    const card = document.createElement('div');
-                    card.className = 'shortlist-card';
-                    card.innerHTML = `
-                        <div class="apartment-header">
-                            <div class="apartment-title">${apt.address}</div>
-                            <div class="apartment-city">📍 ${apt.city}</div>
-                        </div>
-                        <div class="shortlist-info">
-                            <div class="info-row">
-                                <span class="info-label">💰 Total Cost:</span>
-                                <span style="font-weight: 700; color: #667eea;">₪${totalCost.toLocaleString()}/month</span>
-                            </div>
-                            <div class="info-row">
-                                <span class="info-label">⭐ Rating:</span>
-                                <span class="rating-stars">${'★'.repeat(Math.round(avgRating))} (${avgRating.toFixed(1)})</span>
-                            </div>
-                            <div class="info-row">
-                                <span class="info-label">📅 Move-in:</span>
-                                <span>${apt.moveInDate ? new Date(apt.moveInDate).toLocaleDateString('en-GB') : 'Not specified'}</span>
-                            </div>
-                        </div>
-                        <div class="quick-notes">
-                            <label style="font-size: 14px; font-weight: 600; margin-bottom: 4px; display: block;">📝 Notes:</label>
-                            <textarea id="notes-${apt.id}" placeholder="Add additional notes...">${apt.notes || ''}</textarea>
-                            <button class="btn btn-sm btn-primary" style="margin-top: 8px;" onclick="saveQuickNotes('${apt.id}')">💾 Save Notes</button>
-                        </div>
-                        <div class="apartment-actions" style="margin-top: 12px;">
-                            <button class="btn btn-sm btn-danger" onclick="markVisitedNotInterested('${apt.id}')">❌ Changed Mind</button>
-                            <button class="btn btn-sm btn-secondary" onclick="viewDetails('${apt.id}')">👁️ Full Details</button>
-                            <button class="btn btn-sm btn-warning" onclick="toggleIrrelevant('${apt.id}')">🚫 Mark Irrelevant</button>
-                        </div>
-                    `;
-                    visitedList.appendChild(card);
-                });
-            }
-        }
-
-        // View apartment details
-        function viewDetails(id) {
-            const apt = apartments[id];
-            if (!apt) return;
-            
-            const modal = document.createElement('div');
-            modal.style.cssText = `
-                position: fixed;
-                top: 0;
-                left: 0;
-                right: 0;
-                bottom: 0;
-                background: rgba(0,0,0,0.8);
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                z-index: 1000;
-                overflow-y: auto;
-                padding: 20px;
-            `;
-            
-            const content = document.createElement('div');
-            content.style.cssText = `
-                background: white;
-                padding: 30px;
-                border-radius: 16px;
-                max-width: 700px;
-                max-height: 90vh;
-                overflow-y: auto;
-                width: 90%;
-            `;
-            
-            const totalCost = apt.price + apt.arnona + apt.vaad;
-            
-            let statusInfo = '';
-            if (apt.shortlisted && !apt.visited) {
-                statusInfo = '<span class="status-badge shortlist">⭐ Shortlisted</span>';
-            } else if (apt.visited && apt.shortlisted && !apt.visitedButNotInterested) {
-                statusInfo = '<span class="status-badge visited-interested">✅ Visited & Interested</span>';
-            } else if (apt.visitedButNotInterested) {
-                statusInfo = '<span class="status-badge visited-not-interested">❌ Visited But Not Interested</span>';
-            } else if (apt.irrelevant) {
-                statusInfo = '<span class="status-badge irrelevant">🚫 Marked as Irrelevant</span>';
-            }
-            
-            content.innerHTML = `
-                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 20px;">
-                    <div>
-                        <h2 style="margin: 0 0 8px 0;">${apt.address}, ${apt.city}</h2>
-                        ${statusInfo}
-                    </div>
-                    <button onclick="this.parentElement.parentElement.parentElement.remove()" style="background: none; border: none; font-size: 24px; cursor: pointer;">✕</button>
-                </div>
-                
-                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin: 20px 0;">
-                    <div><strong>Floor:</strong> ${apt.floor || 'N/A'}</div>
-                    <div><strong>Size:</strong> ${apt.size || 'N/A'} m²</div>
-                    <div><strong>Monthly Rent:</strong> ₪${apt.price.toLocaleString()}</div>
-                    <div><strong>Arnona:</strong> ₪${apt.arnona.toLocaleString()}</div>
-                    <div><strong>Building Committee:</strong> ₪${apt.vaad.toLocaleString()}</div>
-                    <div style="font-size: 1.2em; color: #10b981;"><strong>Total Monthly:</strong> ₪${totalCost.toLocaleString()}</div>
-                    <div><strong>Divided:</strong> ${apt.divided ? 'Yes' : 'No'}</div>
-                    <div><strong>Parking Permit:</strong> ${apt.parkingPermit ? 'Yes' : 'No'}</div>
-                    <div><strong>Shelter:</strong> ${apt.shelter ? 'Yes' : 'No'}</div>
-                    <div><strong>Elevator:</strong> ${apt.elevator ? 'Yes' : 'No'}</div>
-                    <div><strong>Parking:</strong> ${apt.parking ? 'Yes' : 'No'}</div>
-                    <div><strong>Sun-heated Water:</strong> ${apt.sunHeatedWater ? 'Yes' : 'No'}</div>
-                    <div><strong>Through Broker:</strong> ${apt.broker ? 'Yes' : 'No'}</div>
-                    <div><strong>Visited:</strong> ${apt.visited ? 'Yes ✓' : 'No ⏳'}</div>
-                    <div><strong>Contact:</strong> ${apt.contactName || 'N/A'}</div>
-                    <div><strong>Phone:</strong> ${apt.contactPhone ? `<a href="tel:${apt.contactPhone}" style="color: #667eea;">${apt.contactPhone}</a>` : 'N/A'}</div>
-                    ${apt.moveInDate ? `<div><strong>Move-in Date:</strong> ${new Date(apt.moveInDate).toLocaleDateString('en-GB')}</div>` : ''}
-                    ${apt.listingUrl ? `<div style="grid-column: span 2;"><strong>Listing:</strong> <a href="${apt.listingUrl}" target="_blank" style="color: #667eea;">View Original Listing</a></div>` : ''}
-                    <div style="grid-column: span 2;"><a href="${getGoogleMapsLink(apt.address, apt.city)}" target="_blank" class="google-maps-link">📍 View on Google Maps</a></div>
-                </div>
-                
-                <h3 style="margin-top: 24px;">Ratings</h3>
-                <div style="background: #f9fafb; padding: 16px; border-radius: 12px; margin: 16px 0;">
-                    <div class="rating-item">
-                        <span>Condition</span>
-                        <span class="rating-stars">${'★'.repeat(apt.ratings.condition || 0)}</span>
-                    </div>
-                    <div class="rating-item">
-                        <span>Location for Leisure</span>
-                        <span class="rating-stars">${'★'.repeat(apt.ratings.leisureLocation || 0)<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -1019,12 +205,6 @@
             padding: 30px;
             box-shadow: 0 2px 12px rgba(0,0,0,0.08);
             margin-bottom: 20px;
-            transition: transform 0.2s ease;
-        }
-
-        .card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 20px rgba(0,0,0,0.12);
         }
 
         .form-group {
@@ -1040,8 +220,6 @@
         }
 
         input[type="text"],
-        input[type="email"],
-        input[type="password"],
         input[type="number"],
         input[type="tel"],
         input[type="date"],
@@ -1056,12 +234,7 @@
             background: #fafafa;
         }
 
-        input[type="text"]:focus,
-        input[type="email"]:focus,
-        input[type="password"]:focus,
-        input[type="number"]:focus,
-        input[type="tel"]:focus,
-        input[type="date"]:focus,
+        input:focus,
         textarea:focus,
         select:focus {
             outline: none;
@@ -1077,11 +250,7 @@
             padding: 12px;
             background: #f8f9fa;
             border-radius: 10px;
-            transition: background 0.2s ease;
-        }
-
-        .checkbox-group:hover {
-            background: #f0f2f5;
+            margin-bottom: 16px;
         }
 
         input[type="checkbox"] {
@@ -1112,7 +281,6 @@
 
         .star.active {
             color: #fbbf24 !important;
-            transform: scale(1.05);
         }
 
         .clear-rating {
@@ -1123,13 +291,6 @@
             border-radius: 8px;
             font-size: 13px;
             cursor: pointer;
-            transition: all 0.2s ease;
-            font-weight: 500;
-        }
-
-        .clear-rating:hover {
-            background: #e5e7eb;
-            transform: translateY(-1px);
         }
 
         .btn {
@@ -1148,57 +309,21 @@
         .btn-primary {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
         }
 
         .btn-secondary {
             background: #6b7280;
             color: white;
-            box-shadow: 0 4px 12px rgba(107, 114, 128, 0.2);
         }
 
         .btn-danger {
             background: #ef4444;
             color: white;
-            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
         }
 
         .btn-success {
             background: #10b981;
             color: white;
-            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
-        }
-
-        .btn-warning {
-            background: #f59e0b;
-            color: white;
-            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.2);
-        }
-
-        .btn-outline {
-            background: transparent;
-            color: #667eea;
-            border: 2px solid #667eea;
-            box-shadow: none;
-        }
-
-        .btn-outline:hover {
-            background: #667eea;
-            color: white;
-        }
-
-        .btn-link {
-            background: none;
-            color: #667eea;
-            text-decoration: underline;
-            border: none;
-            padding: 5px 10px;
-            box-shadow: none;
-        }
-
-        .btn-sm {
-            padding: 8px 16px;
-            font-size: 13px;
         }
 
         .btn:hover {
@@ -1210,6 +335,63 @@
             opacity: 0.6;
             cursor: not-allowed;
             transform: none;
+        }
+
+        .user-info {
+            background: rgba(255,255,255,0.2);
+            padding: 6px 16px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .user-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border: 2px solid rgba(255,255,255,0.3);
+        }
+
+        .btn-link {
+            background: none;
+            color: white;
+            text-decoration: underline;
+            border: none;
+            padding: 5px 10px;
+            box-shadow: none;
+        }
+
+        .message-container {
+            margin-bottom: 20px;
+        }
+
+        .error-message, .success-message {
+            padding: 16px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .error-message {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fecaca;
+        }
+
+        .success-message {
+            background: #d1fae5;
+            color: #065f46;
+            border: 1px solid #a7f3d0;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 60px;
+            color: #6b7280;
+            font-size: 16px;
         }
 
         .apartment-grid {
@@ -1224,128 +406,18 @@
             padding: 24px;
             box-shadow: 0 2px 12px rgba(0,0,0,0.08);
             transition: all 0.3s ease;
-            position: relative;
-            border: 2px solid transparent;
         }
 
         .apartment-card:hover {
             transform: translateY(-4px);
             box-shadow: 0 8px 24px rgba(0,0,0,0.12);
-            border-color: #e5e7eb;
-        }
-
-        .apartment-card.shortlisted {
-            border-color: #fbbf24;
-            box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.1);
-        }
-
-        .apartment-card.irrelevant {
-            opacity: 0.6;
-            border-color: #e5e7eb;
-        }
-
-        .status-badges {
-            position: absolute;
-            top: 16px;
-            right: 16px;
-            display: flex;
-            gap: 8px;
-            align-items: center;
-        }
-
-        .status-badge {
-            padding: 4px 10px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
-
-        .status-badge.shortlist {
-            background: #fef3c7;
-            color: #d97706;
-        }
-
-        .status-badge.irrelevant {
-            background: #f3f4f6;
-            color: #6b7280;
-        }
-
-        .status-badge.visited-interested {
-            background: #d1fae5;
-            color: #065f46;
-        }
-
-        .status-badge.visited-not-interested {
-            background: #fee2e2;
-            color: #991b1b;
-        }
-
-        .missing-fees-indicator {
-            position: absolute;
-            top: 16px;
-            left: 16px;
-            width: 32px;
-            height: 32px;
-            background: #ef4444;
-            color: white;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            font-size: 18px;
-            box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
-            cursor: help;
-            transition: transform 0.2s ease;
-        }
-
-        .missing-fees-indicator:hover {
-            transform: scale(1.1);
-        }
-
-        .missing-fees-indicator::after {
-            content: attr(data-tooltip);
-            position: absolute;
-            top: -40px;
-            right: -20px;
-            background: #1f2937;
-            color: white;
-            padding: 6px 12px;
-            border-radius: 8px;
-            font-size: 12px;
-            white-space: nowrap;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.2s ease;
-            font-weight: normal;
-        }
-
-        .missing-fees-indicator:hover::after {
-            opacity: 1;
-        }
-
-        .apartment-header {
-            margin-bottom: 16px;
-            padding-bottom: 16px;
-            border-bottom: 1px solid #e5e7eb;
         }
 
         .apartment-title {
             font-size: 1.1em;
             font-weight: 700;
             color: #1f2937;
-            margin-bottom: 4px;
-        }
-
-        .apartment-city {
-            color: #6b7280;
-            font-size: 14px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
+            margin-bottom: 8px;
         }
 
         .apartment-price {
@@ -1355,443 +427,16 @@
             margin: 12px 0;
         }
 
-        .apartment-details {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 12px;
-            margin-bottom: 16px;
-        }
-
-        .detail-item {
-            font-size: 14px;
-            color: #4b5563;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .detail-icon {
-            font-size: 16px;
-        }
-
-        .rating-summary {
-            background: #f9fafb;
-            padding: 16px;
-            border-radius: 12px;
-            margin: 16px 0;
-        }
-
-        .rating-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 8px;
-            font-size: 14px;
-        }
-
-        .rating-stars {
-            color: #fbbf24;
-            font-weight: 600;
-        }
-
         .apartment-actions {
             display: flex;
             gap: 8px;
             flex-wrap: wrap;
             margin-top: 16px;
-            padding-top: 16px;
-            border-top: 1px solid #e5e7eb;
         }
 
-        .filter-section {
-            background: white;
-            padding: 24px;
-            border-radius: 16px;
-            margin-bottom: 24px;
-            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
-        }
-
-        .filter-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 16px;
-            margin-top: 16px;
-        }
-
-        .total-cost {
-            font-size: 1.1em;
-            font-weight: 700;
-            color: #059669;
-            margin: 12px 0;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .shortlist-section {
-            margin-bottom: 40px;
-        }
-
-        .shortlist-header {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 20px;
-            padding-bottom: 12px;
-            border-bottom: 2px solid #e5e7eb;
-        }
-
-        .shortlist-header h3 {
-            font-size: 1.3em;
-            color: #1f2937;
-            margin: 0;
-        }
-
-        .shortlist-count {
-            background: #f3f4f6;
-            color: #6b7280;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 14px;
-            font-weight: 600;
-        }
-
-        .shortlist-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-            gap: 20px;
-        }
-
-        .shortlist-card {
-            background: white;
-            border-radius: 12px;
-            padding: 20px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-            border: 2px solid #e5e7eb;
-            transition: all 0.2s ease;
-        }
-
-        .shortlist-card:hover {
-            border-color: #667eea;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-        }
-
-        .shortlist-info {
-            display: grid;
-            gap: 12px;
-            margin: 16px 0;
-        }
-
-        .info-row {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 14px;
-        }
-
-        .info-label {
-            font-weight: 600;
-            color: #6b7280;
-            min-width: 100px;
-        }
-
-        .contact-details {
-            background: #f9fafb;
-            padding: 12px;
-            border-radius: 8px;
-            margin: 12px 0;
-        }
-
-        .quick-notes {
-            margin-top: 12px;
-        }
-
-        .quick-notes textarea {
-            width: 100%;
-            min-height: 80px;
-            padding: 10px;
-            border: 1px solid #e5e7eb;
-            border-radius: 8px;
-            font-size: 14px;
-            resize: vertical;
-        }
-
-        .image-upload-section {
-            margin-top: 24px;
-            padding: 20px;
-            background: #f9fafb;
-            border-radius: 12px;
-            border: 2px dashed #e5e7eb;
-        }
-
-        .image-preview {
-            display: flex;
-            gap: 12px;
-            flex-wrap: wrap;
-            margin-top: 16px;
-        }
-
-        .image-preview img {
-            width: 100px;
-            height: 100px;
-            object-fit: cover;
-            border-radius: 12px;
-            border: 2px solid #e5e7eb;
-            transition: transform 0.2s ease;
-        }
-
-        .image-preview img:hover {
-            transform: scale(1.05);
-            border-color: #667eea;
-        }
-
-        .comparison-table {
-            overflow-x: auto;
-            margin-top: 24px;
-            border-radius: 12px;
-            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            background: white;
-            border-radius: 12px;
-            overflow: hidden;
-        }
-
-        th, td {
-            padding: 14px;
-            text-align: left;
-            border-bottom: 1px solid #e5e7eb;
-        }
-
-        th {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            font-weight: 600;
-            cursor: pointer;
-            user-select: none;
-            position: sticky;
-            top: 0;
-        }
-
-        th:hover {
-            opacity: 0.9;
-        }
-
-        tr:hover {
-            background: #f9fafb;
-        }
-
-        .sort-indicator {
-            margin-left: 8px;
-            font-size: 12px;
-            opacity: 0.8;
-        }
-
-        .loading {
-            text-align: center;
-            padding: 60px;
-            color: #6b7280;
-            font-size: 16px;
-        }
-
-        .loading::before {
-            content: "";
-            display: inline-block;
-            width: 24px;
-            height: 24px;
-            border: 3px solid #e5e7eb;
-            border-top-color: #667eea;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-right: 12px;
-            vertical-align: middle;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        .error-message {
-            background: #fee2e2;
-            color: #991b1b;
-            padding: 16px;
-            border-radius: 12px;
-            margin-bottom: 20px;
-            border: 1px solid #fecaca;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .success-message {
-            background: #d1fae5;
-            color: #065f46;
-            padding: 16px;
-            border-radius: 12px;
-            margin-bottom: 20px;
-            border: 1px solid #a7f3d0;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .user-avatar {
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            border: 2px solid rgba(255,255,255,0.3);
-        }
-
-        .user-info {
-            background: rgba(255,255,255,0.2);
-            padding: 6px 16px;
-            border-radius: 20px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        /* Map styles */
-        #map {
-            height: 600px;
-            width: 100%;
-            border-radius: 16px;
-            box-shadow: 0 2px 12px rgba(0,0,0,0.1);
-        }
-
-        .map-sidebar {
-            background: white;
-            padding: 24px;
-            border-radius: 16px;
-            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
-            margin-bottom: 24px;
-        }
-
-        .map-legend {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 16px;
-            margin-bottom: 24px;
-            padding: 16px;
-            background: #f9fafb;
-            border-radius: 12px;
-        }
-
-        .legend-item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 14px;
-        }
-
-        .legend-color {
-            width: 24px;
-            height: 24px;
-            border-radius: 50%;
-            border: 2px solid white;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-        }
-
-        .map-stats {
-            background: #f9fafb;
-            padding: 16px;
-            border-radius: 12px;
-            margin-top: 20px;
-        }
-
-        .map-stat-item {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 12px;
-            font-size: 14px;
-        }
-
-        .map-stat-item span:first-child {
-            color: #6b7280;
-        }
-
-        .map-stat-item span:last-child {
-            font-weight: 600;
-            color: #1f2937;
-        }
-
-        .leaflet-popup-content {
-            min-width: 250px;
-            padding: 16px;
-        }
-
-        .popup-title {
-            font-weight: 700;
-            font-size: 16px;
-            margin-bottom: 8px;
-            color: #1f2937;
-        }
-
-        .popup-detail {
-            font-size: 14px;
-            margin-bottom: 6px;
-            color: #6b7280;
-        }
-
-        .popup-price {
-            font-size: 20px;
-            font-weight: 700;
-            color: #667eea;
-            margin: 12px 0;
-        }
-
-        .popup-rating {
-            color: #fbbf24;
-            margin-bottom: 12px;
-            font-size: 16px;
-        }
-
-        .popup-buttons {
-            display: flex;
-            gap: 8px;
-            margin-top: 16px;
-        }
-
-        .popup-buttons .btn {
-            padding: 8px 12px;
+        .btn-sm {
+            padding: 8px 16px;
             font-size: 13px;
-        }
-
-        .google-maps-link {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            color: #667eea;
-            text-decoration: none;
-            font-size: 14px;
-            font-weight: 500;
-            transition: color 0.2s ease;
-        }
-
-        .google-maps-link:hover {
-            color: #5a67d8;
-            text-decoration: underline;
-        }
-        
-        .popup-missing-fees {
-            background: #fee2e2;
-            color: #ef4444;
-            padding: 6px 12px;
-            border-radius: 8px;
-            font-size: 13px;
-            font-weight: 600;
-            margin: 8px 0;
-        }
-
-        .city-filter-section {
-            background: white;
-            padding: 16px;
-            border-radius: 12px;
-            margin-bottom: 16px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
         }
 
         .empty-state {
@@ -1813,41 +458,18 @@
             color: #4b5563;
         }
 
-        .empty-state-subtext {
-            font-size: 14px;
-            color: #9ca3af;
-        }
-
         @media (max-width: 768px) {
             .tabs {
                 flex-wrap: wrap;
             }
             
-            .apartment-grid,
-            .shortlist-grid {
+            .apartment-grid {
                 grid-template-columns: 1fr;
             }
             
-            .filter-grid {
-                grid-template-columns: 1fr;
-            }
-
             .auth-info {
                 flex-direction: column;
                 gap: 10px;
-            }
-
-            .apartment-details {
-                grid-template-columns: 1fr;
-            }
-
-            .apartment-actions {
-                flex-direction: column;
-            }
-
-            .apartment-actions .btn {
-                width: 100%;
-                justify-content: center;
             }
         }
     </style>
@@ -1871,7 +493,7 @@
     </header>
 
     <div class="container">
-        <div id="message-container"></div>
+        <div id="message-container" class="message-container"></div>
         
         <!-- Authentication Form -->
         <div id="auth-container" class="auth-container">
@@ -1888,14 +510,11 @@
             </button>
         </div>
 
-        <!-- Main Application (Hidden until authenticated) -->
+        <!-- Main Application -->
         <div id="main-content" class="main-content">
             <div class="tabs">
                 <button class="tab active" onclick="switchTab('add')">➕ Add Apartment</button>
                 <button class="tab" onclick="switchTab('list')">📋 View Apartments</button>
-                <button class="tab" onclick="switchTab('shortlist')">⭐ Shortlist</button>
-                <button class="tab" onclick="switchTab('compare')">📊 Compare</button>
-                <button class="tab" onclick="switchTab('map')">🗺️ Map View</button>
             </div>
 
             <!-- Add Apartment Tab -->
@@ -1914,33 +533,8 @@
                         </div>
 
                         <div class="form-group">
-                            <label for="floor">Floor (e.g., 3/5)</label>
-                            <input type="text" id="floor" placeholder="3/5">
-                        </div>
-
-                        <div class="form-group">
-                            <label for="size">Size (m²)</label>
-                            <input type="number" id="size">
-                        </div>
-
-                        <div class="checkbox-group">
-                            <input type="checkbox" id="divided">
-                            <label for="divided">Divided</label>
-                        </div>
-
-                        <div class="checkbox-group">
-                            <input type="checkbox" id="parkingPermit">
-                            <label for="parkingPermit">Parking Permit Available</label>
-                        </div>
-
-                        <div class="checkbox-group">
-                            <input type="checkbox" id="shelter">
-                            <label for="shelter">Shelter Room</label>
-                        </div>
-
-                        <div class="checkbox-group">
-                            <input type="checkbox" id="elevator">
-                            <label for="elevator">Elevator</label>
+                            <label for="price">Monthly Rent (₪)</label>
+                            <input type="number" id="price" required>
                         </div>
 
                         <div class="checkbox-group">
@@ -1949,28 +543,8 @@
                         </div>
 
                         <div class="checkbox-group">
-                            <input type="checkbox" id="sunHeatedWater">
-                            <label for="sunHeatedWater">Sun-heated Water Tank</label>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="price">Monthly Rent (₪)</label>
-                            <input type="number" id="price" required>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="arnona">Arnona (₪)</label>
-                            <input type="number" id="arnona">
-                        </div>
-
-                        <div class="form-group">
-                            <label for="vaad">Building Committee (₪)</label>
-                            <input type="number" id="vaad">
-                        </div>
-
-                        <div class="checkbox-group">
-                            <input type="checkbox" id="broker">
-                            <label for="broker">Through Broker</label>
+                            <input type="checkbox" id="elevator">
+                            <label for="elevator">Elevator</label>
                         </div>
 
                         <div class="checkbox-group">
@@ -1979,120 +553,20 @@
                         </div>
 
                         <div class="form-group">
-                            <label for="contactName">Contact Name</label>
-                            <input type="text" id="contactName">
-                        </div>
-
-                        <div class="form-group">
-                            <label for="contactPhone">Contact Phone</label>
-                            <input type="tel" id="contactPhone">
-                        </div>
-
-                        <div class="form-group">
-                            <label for="moveInDate">Move-in Date</label>
-                            <input type="date" id="moveInDate">
-                        </div>
-
-                        <div class="form-group">
-                            <label for="listingUrl">Listing URL</label>
-                            <input type="text" id="listingUrl" placeholder="https://...">
-                        </div>
-
-                        <h3 style="margin-top: 30px; margin-bottom: 20px;">Ratings</h3>
-
-                        <div class="form-group">
-                            <label>Apartment Condition</label>
-                            <div class="rating-group" data-rating="condition">
+                            <label>Overall Rating</label>
+                            <div class="rating-group" data-rating="overall">
                                 <span class="star" data-value="1">★</span>
                                 <span class="star" data-value="2">★</span>
                                 <span class="star" data-value="3">★</span>
                                 <span class="star" data-value="4">★</span>
                                 <span class="star" data-value="5">★</span>
-                                <button type="button" class="clear-rating" onclick="clearRating('condition')">Clear</button>
+                                <button type="button" class="clear-rating" onclick="clearRating('overall')">Clear</button>
                             </div>
                         </div>
 
                         <div class="form-group">
-                            <label>Location for Leisure</label>
-                            <div class="rating-group" data-rating="leisureLocation">
-                                <span class="star" data-value="1">★</span>
-                                <span class="star" data-value="2">★</span>
-                                <span class="star" data-value="3">★</span>
-                                <span class="star" data-value="4">★</span>
-                                <span class="star" data-value="5">★</span>
-                                <button type="button" class="clear-rating" onclick="clearRating('leisureLocation')">Clear</button>
-                            </div>
-                        </div>
-
-                        <div class="form-group">
-                            <label>Location for Work</label>
-                            <div class="rating-group" data-rating="workLocation">
-                                <span class="star" data-value="1">★</span>
-                                <span class="star" data-value="2">★</span>
-                                <span class="star" data-value="3">★</span>
-                                <span class="star" data-value="4">★</span>
-                                <span class="star" data-value="5">★</span>
-                                <button type="button" class="clear-rating" onclick="clearRating('workLocation')">Clear</button>
-                            </div>
-                        </div>
-
-                        <div class="form-group">
-                            <label>Area Parking</label>
-                            <div class="rating-group" data-rating="areaParking">
-                                <span class="star" data-value="1">★</span>
-                                <span class="star" data-value="2">★</span>
-                                <span class="star" data-value="3">★</span>
-                                <span class="star" data-value="4">★</span>
-                                <span class="star" data-value="5">★</span>
-                                <button type="button" class="clear-rating" onclick="clearRating('areaParking')">Clear</button>
-                            </div>
-                        </div>
-
-                        <div class="form-group">
-                            <label>Noise Level (5 = Very Quiet)</label>
-                            <div class="rating-group" data-rating="noise">
-                                <span class="star" data-value="1">★</span>
-                                <span class="star" data-value="2">★</span>
-                                <span class="star" data-value="3">★</span>
-                                <span class="star" data-value="4">★</span>
-                                <span class="star" data-value="5">★</span>
-                                <button type="button" class="clear-rating" onclick="clearRating('noise')">Clear</button>
-                            </div>
-                        </div>
-
-                        <div class="form-group">
-                            <label>Neighbors</label>
-                            <div class="rating-group" data-rating="neighbors">
-                                <span class="star" data-value="1">★</span>
-                                <span class="star" data-value="2">★</span>
-                                <span class="star" data-value="3">★</span>
-                                <span class="star" data-value="4">★</span>
-                                <span class="star" data-value="5">★</span>
-                                <button type="button" class="clear-rating" onclick="clearRating('neighbors')">Clear</button>
-                            </div>
-                        </div>
-
-                        <div class="form-group">
-                            <label>Privacy</label>
-                            <div class="rating-group" data-rating="privacy">
-                                <span class="star" data-value="1">★</span>
-                                <span class="star" data-value="2">★</span>
-                                <span class="star" data-value="3">★</span>
-                                <span class="star" data-value="4">★</span>
-                                <span class="star" data-value="5">★</span>
-                                <button type="button" class="clear-rating" onclick="clearRating('privacy')">Clear</button>
-                            </div>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="notes">Notes (Contact/Visit Notes)</label>
-                            <textarea id="notes" rows="4" placeholder="Add notes about your visit, contact with owner, or any other observations..."></textarea>
-                        </div>
-
-                        <div class="image-upload-section">
-                            <label for="images">Upload Images (Max 5)</label>
-                            <input type="file" id="images" accept="image/*" multiple onchange="handleImageUpload(event)">
-                            <div id="image-preview" class="image-preview"></div>
+                            <label for="notes">Notes</label>
+                            <textarea id="notes" rows="4" placeholder="Add notes about the apartment..."></textarea>
                         </div>
 
                         <button type="submit" class="btn btn-primary" id="submit-btn">Save Apartment</button>
@@ -2102,165 +576,361 @@
 
             <!-- View Apartments Tab -->
             <div id="list-tab" class="tab-content">
-                <div class="filter-section">
-                    <h3>Filters</h3>
-                    <div class="filter-grid">
-                        <div class="form-group">
-                            <label for="filter-city">City</label>
-                            <select id="filter-city">
-                                <option value="">All Cities</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="filter-max-price">Max Price</label>
-                            <input type="number" id="filter-max-price" placeholder="Maximum price">
-                        </div>
-                        <div class="form-group">
-                            <label for="filter-min-rating">Min Rating</label>
-                            <select id="filter-min-rating">
-                                <option value="">All</option>
-                                <option value="3">3★ and above</option>
-                                <option value="4">4★ and above</option>
-                                <option value="5">5★ only</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="filter-visited">Visit Status</label>
-                            <select id="filter-visited">
-                                <option value="">All</option>
-                                <option value="visited">Visited Only</option>
-                                <option value="not-visited">Not Visited Only</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="filter-relevance">Relevance</label>
-                            <select id="filter-relevance">
-                                <option value="relevant">Relevant Only</option>
-                                <option value="all">Include Irrelevant</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>&nbsp;</label>
-                            <button class="btn btn-primary" onclick="applyFilters()">Apply Filters</button>
-                        </div>
-                    </div>
-                </div>
-                
                 <div id="apartments-list" class="apartment-grid">
                     <div class="loading">Loading apartments...</div>
                 </div>
-                
-                <button class="btn btn-success" onclick="exportToCSV()" style="margin-top: 20px;">📥 Export to CSV</button>
-            </div>
-
-            <!-- Shortlist Tab -->
-            <div id="shortlist-tab" class="tab-content">
-                <div class="card">
-                    <h2>Shortlisted Apartments</h2>
-                    
-                    <div class="shortlist-section">
-                        <div class="shortlist-header">
-                            <h3>🏃 To Visit / Contact</h3>
-                            <span class="shortlist-count" id="to-visit-count">0</span>
-                        </div>
-                        <div id="shortlist-to-visit" class="shortlist-grid">
-                            <div class="empty-state">
-                                <div class="empty-state-icon">📭</div>
-                                <div class="empty-state-text">No apartments to visit yet</div>
-                                <div class="empty-state-subtext">Add apartments to your shortlist from the main list</div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="shortlist-section">
-                        <div class="shortlist-header">
-                            <h3>✅ Visited & Considering</h3>
-                            <span class="shortlist-count" id="visited-considering-count">0</span>
-                        </div>
-                        <div id="shortlist-visited" class="shortlist-grid">
-                            <div class="empty-state">
-                                <div class="empty-state-icon">🏠</div>
-                                <div class="empty-state-text">No visited apartments under consideration</div>
-                                <div class="empty-state-subtext">Visit apartments and mark them as interested</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Compare Tab -->
-            <div id="compare-tab" class="tab-content">
-                <div class="card">
-                    <h2>Compare Apartments</h2>
-                    <div id="comparison-section">
-                        <p>Select apartments to compare from the list below:</p>
-                        <div id="comparison-checkboxes" style="margin: 20px 0;"></div>
-                        <button class="btn btn-primary" onclick="generateComparison()">Compare Selected</button>
-                        <div id="comparison-result"></div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Map Tab -->
-            <div id="map-tab" class="tab-content">
-                <div class="map-sidebar">
-                    <h3>Map View</h3>
-                    <div class="map-legend">
-                        <div class="legend-item">
-                            <div class="legend-color" style="background-color: #10b981;"></div>
-                            <span>₪4,500 - ₪5,500</span>
-                        </div>
-                        <div class="legend-item">
-                            <div class="legend-color" style="background-color: #f59e0b;"></div>
-                            <span>₪5,500 - ₪6,500</span>
-                        </div>
-                        <div class="legend-item">
-                            <div class="legend-color" style="background-color: #ef4444;"></div>
-                            <span>Above ₪6,500</span>
-                        </div>
-                    </div>
-                    
-                    <div class="filter-section">
-                        <h4>Map Filters</h4>
-                        <div class="form-group">
-                            <label for="map-filter-city">City</label>
-                            <select id="map-filter-city" onchange="updateMapMarkers()">
-                                <option value="">All Cities</option>
-                            </select>
-                        </div>
-                        <div class="checkbox-group">
-                            <input type="checkbox" id="map-filter-visited" onchange="updateMapMarkers()">
-                            <label for="map-filter-visited">Visited Only</label>
-                        </div>
-                        <div class="checkbox-group">
-                            <input type="checkbox" id="map-filter-parking" onchange="updateMapMarkers()">
-                            <label for="map-filter-parking">With Parking</label>
-                        </div>
-                        <div class="checkbox-group">
-                            <input type="checkbox" id="map-filter-elevator" onchange="updateMapMarkers()">
-                            <label for="map-filter-elevator">With Elevator</label>
-                        </div>
-                        <div class="checkbox-group">
-                            <input type="checkbox" id="map-filter-irrelevant" onchange="updateMapMarkers()">
-                            <label for="map-filter-irrelevant">Show Irrelevant</label>
-                        </div>
-                    </div>
-                    
-                    <div class="map-stats" id="map-stats">
-                        <div class="map-stat-item">
-                            <span>Apartments shown:</span>
-                            <span id="map-count">0</span>
-                        </div>
-                        <div class="map-stat-item">
-                            <span>Average price:</span>
-                            <span id="map-avg-price">₪0</span>
-                        </div>
-                    </div>
-                </div>
-                
-                <div id="map"></div>
             </div>
         </div>
     </div>
 
     <script>
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyBl1t5NahZ44fToeiGa78qSvuhvPwzySAc",
+            authDomain: "app-tracker-7d451.firebaseapp.com",
+            databaseURL: "https://app-tracker-7d451-default-rtdb.firebaseio.com",
+            projectId: "app-tracker-7d451",
+            storageBucket: "app-tracker-7d451.firebasestorage.app",
+            messagingSenderId: "754427444557",
+            appId: "1:754427444557:web:5b7b41b7e63acb588e0b04",
+            measurementId: "G-KLY0FQ6L62"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+        const auth = firebase.auth();
+        
+        // Global Variables
+        let apartments = {};
+        let currentUser = null;
+        let editingId = null;
+
+        // Authentication Functions
+        auth.onAuthStateChanged((user) => {
+            currentUser = user;
+            if (user) {
+                document.getElementById('auth-container').style.display = 'none';
+                document.getElementById('main-content').classList.add('authenticated');
+                document.getElementById('user-info').style.display = 'flex';
+                document.getElementById('user-email').textContent = user.email;
+                
+                if (user.photoURL) {
+                    const avatar = document.getElementById('user-avatar');
+                    avatar.src = user.photoURL;
+                    avatar.style.display = 'inline-block';
+                }
+                
+                setupDatabaseListeners();
+                updateSyncStatus(true);
+                showMessage('success', `Welcome back, ${user.displayName || user.email}!`);
+            } else {
+                document.getElementById('auth-container').style.display = 'block';
+                document.getElementById('main-content').classList.remove('authenticated');
+                document.getElementById('user-info').style.display = 'none';
+                apartments = {};
+                updateSyncStatus(false);
+            }
+        });
+
+        // Sign in with Google
+        async function signInWithGoogle() {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            
+            try {
+                await auth.signInWithPopup(provider);
+            } catch (error) {
+                console.error('Google sign-in error:', error);
+                showMessage('error', 'Sign in failed: ' + error.message);
+            }
+        }
+
+        // Sign out user
+        async function signOut() {
+            try {
+                await auth.signOut();
+                showMessage('success', 'Signed out successfully');
+            } catch (error) {
+                showMessage('error', 'Sign out failed: ' + error.message);
+            }
+        }
+
+        // Database Functions
+        function setupDatabaseListeners() {
+            if (!currentUser) return;
+            
+            const userApartmentsRef = database.ref(`users/${currentUser.uid}/apartments`);
+            
+            userApartmentsRef.on('value', (snapshot) => {
+                apartments = snapshot.val() || {};
+                loadApartments();
+                updateSyncStatus(true);
+            }, (error) => {
+                showMessage('error', 'Failed to load apartments: ' + error.message);
+                updateSyncStatus(false);
+            });
+        }
+
+        function updateSyncStatus(online) {
+            const indicator = document.getElementById('sync-indicator');
+            const text = document.getElementById('sync-text');
+            
+            if (online && currentUser) {
+                indicator.classList.remove('offline');
+                text.textContent = 'Synced with cloud';
+            } else if (currentUser) {
+                indicator.classList.add('offline');
+                text.textContent = 'Offline mode';
+            } else {
+                indicator.classList.add('offline');
+                text.textContent = 'Not authenticated';
+            }
+        }
+
+        function saveApartmentToFirebase(apartmentData, apartmentId = null) {
+            if (!currentUser) {
+                throw new Error('User not authenticated');
+            }
+            
+            const userApartmentsRef = database.ref(`users/${currentUser.uid}/apartments`);
+            
+            if (apartmentId) {
+                return userApartmentsRef.child(apartmentId).set(apartmentData);
+            } else {
+                return userApartmentsRef.push(apartmentData);
+            }
+        }
+
+        function deleteApartmentFromFirebase(apartmentId) {
+            if (!currentUser) {
+                throw new Error('User not authenticated');
+            }
+            
+            return database.ref(`users/${currentUser.uid}/apartments/${apartmentId}`).remove();
+        }
+
+        // UI Functions
+        function showMessage(type, message) {
+            const messageContainer = document.getElementById('message-container');
+            const className = type === 'error' ? 'error-message' : 'success-message';
+            const icon = type === 'error' ? '❌' : '✅';
+            messageContainer.innerHTML = `<div class="${className}">${icon} ${message}</div>`;
+            setTimeout(() => {
+                messageContainer.innerHTML = '';
+            }, 5000);
+        }
+
+        function switchTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
+            
+            const tabButtons = document.querySelectorAll('.tab');
+            const tabIndex = ['add', 'list'].indexOf(tab);
+            if (tabIndex >= 0) {
+                tabButtons[tabIndex].classList.add('active');
+            }
+            
+            document.getElementById(`${tab}-tab`).classList.add('active');
+            
+            if (tab === 'list') {
+                loadApartments();
+            }
+        }
+
+        function clearRating(ratingType) {
+            const group = document.querySelector(`[data-rating="${ratingType}"]`);
+            group.removeAttribute('data-value');
+            group.querySelectorAll('.star').forEach(star => {
+                star.classList.remove('active');
+                star.style.color = '#e5e7eb';
+            });
+        }
+
+        function setupRatingListeners() {
+            document.querySelectorAll('.rating-group').forEach(group => {
+                const stars = group.querySelectorAll('.star');
+                stars.forEach((star, index) => {
+                    star.addEventListener('click', () => {
+                        const rating = index + 1;
+                        group.setAttribute('data-value', rating);
+                        stars.forEach((s, i) => {
+                            if (i < rating) {
+                                s.classList.add('active');
+                                s.style.color = '#fbbf24';
+                            } else {
+                                s.classList.remove('active');
+                                s.style.color = '#e5e7eb';
+                            }
+                        });
+                    });
+                    
+                    star.addEventListener('mouseenter', () => {
+                        stars.forEach((s, i) => {
+                            if (i <= index) {
+                                s.style.color = '#fbbf24';
+                            } else {
+                                s.style.color = '#e5e7eb';
+                            }
+                        });
+                    });
+                });
+                
+                group.addEventListener('mouseleave', () => {
+                    stars.forEach((s, i) => {
+                        const currentRating = parseInt(group.getAttribute('data-value')) || 0;
+                        if (i < currentRating) {
+                            s.style.color = '#fbbf24';
+                        } else {
+                            s.style.color = '#e5e7eb';
+                        }
+                    });
+                });
+            });
+        }
+
+        function setupFormListener() {
+            document.getElementById('apartment-form').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                if (!currentUser) {
+                    showMessage('error', 'You must be signed in to save apartments');
+                    return;
+                }
+                
+                const submitBtn = document.getElementById('submit-btn');
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Saving...';
+                
+                const formData = {
+                    address: document.getElementById('address').value,
+                    city: document.getElementById('city').value,
+                    price: parseInt(document.getElementById('price').value),
+                    parking: document.getElementById('parking').checked,
+                    elevator: document.getElementById('elevator').checked,
+                    visited: document.getElementById('visited').checked,
+                    rating: parseInt(document.querySelector('[data-rating="overall"]').getAttribute('data-value')) || 0,
+                    notes: document.getElementById('notes').value,
+                    createdAt: Date.now(),
+                    updatedAt: Date.now()
+                };
+                
+                try {
+                    await saveApartmentToFirebase(formData, editingId);
+                    showMessage('success', editingId ? 'Apartment updated successfully!' : 'Apartment saved successfully!');
+                    
+                    // Reset form
+                    this.reset();
+                    editingId = null;
+                    
+                    // Reset rating
+                    document.querySelectorAll('.rating-group').forEach(group => {
+                        group.removeAttribute('data-value');
+                        group.querySelectorAll('.star').forEach(star => {
+                            star.classList.remove('active');
+                            star.style.color = '#e5e7eb';
+                        });
+                    });
+                    
+                    submitBtn.textContent = 'Save Apartment';
+                } catch (error) {
+                    showMessage('error', 'Failed to save apartment: ' + error.message);
+                } finally {
+                    submitBtn.disabled = false;
+                }
+            });
+        }
+
+        async function deleteApartment(id) {
+            if (!confirm('Are you sure you want to delete this apartment?')) return;
+            
+            try {
+                await deleteApartmentFromFirebase(id);
+                showMessage('success', 'Apartment deleted successfully');
+            } catch (error) {
+                showMessage('error', 'Failed to delete apartment: ' + error.message);
+            }
+        }
+
+        function editApartment(id) {
+            const apt = apartments[id];
+            if (!apt) return;
+            
+            editingId = id;
+            
+            // Populate form
+            document.getElementById('address').value = apt.address || '';
+            document.getElementById('city').value = apt.city || '';
+            document.getElementById('price').value = apt.price || '';
+            document.getElementById('parking').checked = apt.parking || false;
+            document.getElementById('elevator').checked = apt.elevator || false;
+            document.getElementById('visited').checked = apt.visited || false;
+            document.getElementById('notes').value = apt.notes || '';
+            
+            // Set rating
+            if (apt.rating) {
+                const group = document.querySelector('[data-rating="overall"]');
+                group.setAttribute('data-value', apt.rating);
+                const stars = group.querySelectorAll('.star');
+                stars.forEach((star, i) => {
+                    if (i < apt.rating) {
+                        star.classList.add('active');
+                        star.style.color = '#fbbf24';
+                    } else {
+                        star.classList.remove('active');
+                        star.style.color = '#e5e7eb';
+                    }
+                });
+            }
+            
+            document.getElementById('submit-btn').textContent = 'Update Apartment';
+            switchTab('add');
+        }
+
+        function loadApartments() {
+            const list = document.getElementById('apartments-list');
+            list.innerHTML = '';
+            
+            const apartmentArray = Object.entries(apartments).map(([id, data]) => ({
+                id,
+                ...data
+            }));
+            
+            if (apartmentArray.length === 0) {
+                list.innerHTML = '<div class="empty-state"><div class="empty-state-icon">🏠</div><div class="empty-state-text">No apartments yet</div><div class="empty-state-subtext">Add your first apartment to get started!</div></div>';
+                return;
+            }
+            
+            apartmentArray.forEach(apt => {
+                const card = document.createElement('div');
+                card.className = 'apartment-card';
+                
+                card.innerHTML = `
+                    <div class="apartment-title">${apt.address}</div>
+                    <div style="color: #6b7280; font-size: 14px; margin-bottom: 8px;">📍 ${apt.city}</div>
+                    <div class="apartment-price">₪${apt.price.toLocaleString()}</div>
+                    <div style="margin: 12px 0;">
+                        <div style="font-size: 14px; color: #4b5563; margin-bottom: 4px;">
+                            ${apt.parking ? '<span style="color: #10b981;">✓</span>' : '<span style="color: #ef4444;">✗</span>'} Parking
+                            | ${apt.elevator ? '<span style="color: #10b981;">✓</span>' : '<span style="color: #ef4444;">✗</span>'} Elevator
+                            | ${apt.visited ? '<span style="color: #10b981;">✓ Visited</span>' : '<span style="color: #f59e0b;">⏳ Not visited</span>'}
+                        </div>
+                        ${apt.rating ? `<div style="color: #fbbf24; font-size: 16px;">${'★'.repeat(apt.rating)} (${apt.rating}/5)</div>` : ''}
+                    </div>
+                    ${apt.notes ? `<div style="background: #f9fafb; padding: 12px; border-radius: 8px; font-size: 14px; margin: 12px 0;">${apt.notes}</div>` : ''}
+                    <div class="apartment-actions">
+                        <button class="btn btn-sm btn-primary" onclick="editApartment('${apt.id}')">✏️ Edit</button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteApartment('${apt.id}')">🗑️ Delete</button>
+                    </div>
+                `;
+                list.appendChild(card);
+            });
+        }
+
+        // Initialize Application
+        document.addEventListener('DOMContentLoaded', function() {
+            setupRatingListeners();
+            setupFormListener();
+        });
+    </script>
+</body>
+</html>
