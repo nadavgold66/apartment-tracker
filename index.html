@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Apartment Rental Tracker - Enhanced</title>
+    <title>Apartment Rental Tracker - Google Sign-In</title>
     
     <!-- Firebase SDK v8 (using compat for simplicity with auth) -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
@@ -24,13 +24,13 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: #f0f2f5;
-            color: #1a1a1a;
+            background: #f5f7fa;
+            color: #2c3e50;
             line-height: 1.6;
         }
 
         .container {
-            max-width: 1400px;
+            max-width: 1200px;
             margin: 0 auto;
             padding: 20px;
         }
@@ -38,38 +38,32 @@
         header {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            padding: 25px 0;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-            position: sticky;
-            top: 0;
-            z-index: 100;
+            padding: 30px 0;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
 
         h1 {
             text-align: center;
-            font-size: 2.2em;
-            font-weight: 600;
-            margin-bottom: 10px;
+            font-size: 2.5em;
+            font-weight: 300;
         }
 
         .auth-info {
             text-align: center;
             margin-top: 10px;
             font-size: 14px;
-            opacity: 0.95;
+            opacity: 0.9;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 20px;
+            gap: 15px;
         }
 
         .sync-status {
             display: flex;
             align-items: center;
-            gap: 8px;
-            background: rgba(255,255,255,0.2);
-            padding: 6px 12px;
-            border-radius: 20px;
+            gap: 5px;
         }
 
         .sync-indicator {
@@ -78,40 +72,20 @@
             height: 8px;
             border-radius: 50%;
             background: #4ade80;
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-            0% { opacity: 1; }
-            50% { opacity: 0.5; }
-            100% { opacity: 1; }
         }
 
         .sync-indicator.offline {
             background: #fbbf24;
-            animation: none;
         }
 
         .auth-container {
-            max-width: 450px;
-            margin: 80px auto;
+            max-width: 400px;
+            margin: 50px auto;
             background: white;
-            padding: 50px;
-            border-radius: 20px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
             text-align: center;
-        }
-
-        .auth-container h2 {
-            color: #333;
-            margin-bottom: 10px;
-            font-size: 28px;
-        }
-
-        .auth-container p {
-            color: #666;
-            margin-bottom: 30px;
-            font-size: 16px;
         }
 
         .google-signin-btn {
@@ -121,20 +95,19 @@
             background: white;
             color: #3c4043;
             border: 1px solid #dadce0;
-            padding: 14px 28px;
-            border-radius: 12px;
+            padding: 12px 24px;
+            border-radius: 8px;
             font-size: 16px;
             cursor: pointer;
             transition: all 0.3s ease;
             font-family: 'Roboto', sans-serif;
             font-weight: 500;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            margin-top: 20px;
         }
 
         .google-signin-btn:hover {
             background: #f8f9fa;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
 
         .google-logo {
@@ -152,47 +125,32 @@
 
         .tabs {
             display: flex;
-            gap: 8px;
+            gap: 10px;
             margin-bottom: 30px;
             background: white;
-            padding: 8px;
-            border-radius: 16px;
-            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
-            overflow-x: auto;
+            padding: 10px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            flex-wrap: wrap;
         }
 
         .tab {
             padding: 12px 24px;
-            background: transparent;
+            background: #f0f2f5;
             border: none;
-            border-radius: 12px;
+            border-radius: 8px;
             cursor: pointer;
-            font-size: 15px;
-            font-weight: 500;
+            font-size: 16px;
             transition: all 0.3s ease;
-            white-space: nowrap;
-            color: #666;
-        }
-
-        .tab:hover {
-            background: #f5f5f5;
-            color: #333;
         }
 
         .tab.active {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
         }
 
         .tab-content {
             display: none;
-            animation: fadeIn 0.3s ease-in-out;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
         }
 
         .tab-content.active {
@@ -201,109 +159,104 @@
 
         .card {
             background: white;
-            border-radius: 16px;
+            border-radius: 12px;
             padding: 30px;
-            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
             margin-bottom: 20px;
         }
 
         .form-group {
-            margin-bottom: 24px;
+            margin-bottom: 20px;
         }
 
         label {
             display: block;
             margin-bottom: 8px;
-            font-weight: 600;
-            color: #333;
-            font-size: 14px;
+            font-weight: 500;
+            color: #555;
         }
 
         input[type="text"],
+        input[type="email"],
+        input[type="password"],
         input[type="number"],
         input[type="tel"],
         input[type="date"],
         textarea,
         select {
             width: 100%;
-            padding: 12px 16px;
-            border: 2px solid #e5e7eb;
-            border-radius: 10px;
-            font-size: 15px;
-            transition: all 0.3s ease;
-            background: #fafafa;
+            padding: 12px;
+            border: 2px solid #e0e6ed;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
         }
 
-        input:focus,
+        input[type="text"]:focus,
+        input[type="email"]:focus,
+        input[type="password"]:focus,
+        input[type="number"]:focus,
+        input[type="tel"]:focus,
+        input[type="date"]:focus,
         textarea:focus,
         select:focus {
             outline: none;
             border-color: #667eea;
-            background: white;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
         }
 
         .checkbox-group {
             display: flex;
             align-items: center;
-            gap: 12px;
-            padding: 12px;
-            background: #f8f9fa;
-            border-radius: 10px;
-            margin-bottom: 16px;
+            gap: 10px;
         }
 
         input[type="checkbox"] {
             width: 20px;
             height: 20px;
             cursor: pointer;
-            accent-color: #667eea;
         }
 
         .rating-group {
             display: flex;
-            gap: 8px;
+            gap: 5px;
             margin-top: 8px;
             align-items: center;
         }
 
         .star {
-            font-size: 28px;
-            color: #e5e7eb;
+            font-size: 24px;
+            color: #ddd;
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: color 0.2s ease;
             user-select: none;
         }
 
-        .star:hover {
-            transform: scale(1.1);
-        }
-
         .star.active {
-            color: #fbbf24 !important;
+            color: #ffd700 !important;
         }
 
         .clear-rating {
-            margin-left: 15px;
-            padding: 6px 12px;
-            background: #f3f4f6;
-            border: 1px solid #e5e7eb;
-            border-radius: 8px;
-            font-size: 13px;
+            margin-left: 10px;
+            padding: 4px 8px;
+            background: #f0f2f5;
+            border: 1px solid #e0e6ed;
+            border-radius: 4px;
+            font-size: 12px;
             cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .clear-rating:hover {
+            background: #e0e6ed;
         }
 
         .btn {
             padding: 12px 24px;
             border: none;
-            border-radius: 10px;
-            font-size: 15px;
-            font-weight: 600;
+            border-radius: 8px;
+            font-size: 16px;
             cursor: pointer;
             transition: all 0.3s ease;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
         }
 
         .btn-primary {
@@ -312,23 +265,41 @@
         }
 
         .btn-secondary {
-            background: #6b7280;
+            background: #6c757d;
             color: white;
         }
 
         .btn-danger {
-            background: #ef4444;
+            background: #dc3545;
             color: white;
         }
 
         .btn-success {
-            background: #10b981;
+            background: #28a745;
             color: white;
+        }
+
+        .btn-warning {
+            background: #ffc107;
+            color: #212529;
+        }
+
+        .btn-link {
+            background: none;
+            color: #667eea;
+            text-decoration: underline;
+            border: none;
+            padding: 5px;
+        }
+
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 14px;
         }
 
         .btn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         }
 
         .btn:disabled {
@@ -337,140 +308,456 @@
             transform: none;
         }
 
-        .user-info {
-            background: rgba(255,255,255,0.2);
-            padding: 6px 16px;
-            border-radius: 20px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .user-avatar {
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            border: 2px solid rgba(255,255,255,0.3);
-        }
-
-        .btn-link {
-            background: none;
-            color: white;
-            text-decoration: underline;
-            border: none;
-            padding: 5px 10px;
-            box-shadow: none;
-        }
-
-        .message-container {
-            margin-bottom: 20px;
-        }
-
-        .error-message, .success-message {
-            padding: 16px;
-            border-radius: 12px;
-            margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .error-message {
-            background: #fee2e2;
-            color: #991b1b;
-            border: 1px solid #fecaca;
-        }
-
-        .success-message {
-            background: #d1fae5;
-            color: #065f46;
-            border: 1px solid #a7f3d0;
-        }
-
-        .loading {
-            text-align: center;
-            padding: 60px;
-            color: #6b7280;
-            font-size: 16px;
-        }
-
         .apartment-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-            gap: 24px;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
         }
 
         .apartment-card {
             background: white;
-            border-radius: 16px;
-            padding: 24px;
-            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
-            transition: all 0.3s ease;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            transition: transform 0.3s ease;
+            position: relative;
         }
 
         .apartment-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+            transform: translateY(-5px);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+
+        .apartment-card.irrelevant {
+            opacity: 0.6;
+            background: #f8f9fa;
+        }
+
+        .irrelevant-badge {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: #dc3545;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .shortlist-badge {
+            position: absolute;
+            top: 10px;
+            right: 50px;
+            background: #ffc107;
+            color: #212529;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .missing-fees-indicator {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 30px;
+            height: 30px;
+            background: #ff6b6b;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 18px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            cursor: help;
+            transition: transform 0.2s ease;
+        }
+
+        .missing-fees-indicator:hover {
+            transform: scale(1.1);
+        }
+
+        .missing-fees-indicator::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            top: -35px;
+            right: 0;
+            background: #333;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s ease;
+        }
+
+        .missing-fees-indicator:hover::after {
+            opacity: 1;
+        }
+
+        .apartment-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 15px;
         }
 
         .apartment-title {
-            font-size: 1.1em;
-            font-weight: 700;
-            color: #1f2937;
-            margin-bottom: 8px;
+            font-size: 1.2em;
+            font-weight: 600;
+            color: #2c3e50;
         }
 
         .apartment-price {
-            font-size: 1.5em;
+            font-size: 1.3em;
             color: #667eea;
-            font-weight: 700;
-            margin: 12px 0;
+            font-weight: 600;
         }
 
-        .apartment-actions {
+        .apartment-details {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .detail-item {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .rating-summary {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+
+        .rating-item {
             display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-            margin-top: 16px;
-        }
-
-        .btn-sm {
-            padding: 8px 16px;
-            font-size: 13px;
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 60px 20px;
-            color: #6b7280;
-        }
-
-        .empty-state-icon {
-            font-size: 48px;
-            margin-bottom: 16px;
-            opacity: 0.5;
-        }
-
-        .empty-state-text {
-            font-size: 18px;
+            justify-content: space-between;
             margin-bottom: 8px;
-            font-weight: 500;
-            color: #4b5563;
+            font-size: 14px;
+        }
+
+        .filter-section {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        .filter-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .image-upload-section {
+            margin-top: 20px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .image-preview {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+
+        .image-preview img {
+            width: 100px;
+            height: 100px;
+            object-fit: cover;
+            border-radius: 8px;
+            border: 2px solid #e0e6ed;
+        }
+
+        .total-cost {
+            font-size: 1.1em;
+            font-weight: 600;
+            color: #28a745;
+            margin-top: 10px;
+        }
+
+        .comparison-table {
+            overflow-x: auto;
+            margin-top: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e0e6ed;
+        }
+
+        th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        th:hover {
+            opacity: 0.9;
+        }
+
+        tr:hover {
+            background: #f8f9fa;
+        }
+
+        .sort-indicator {
+            margin-left: 5px;
+            font-size: 12px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .error-message {
+            background: #fee;
+            color: #c33;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .success-message {
+            background: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+
+        .shortlist-card {
+            background: #fffbf0;
+            border: 2px solid #ffc107;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        .shortlist-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .shortlist-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .shortlist-note {
+            background: white;
+            padding: 10px;
+            border-radius: 6px;
+            margin-top: 10px;
+        }
+
+        .add-shortlist-note {
+            width: 100%;
+            margin-bottom: 10px;
+        }
+
+        .irrelevant-reason {
+            background: #ffe4e6;
+            padding: 10px;
+            border-radius: 6px;
+            margin-top: 10px;
+            color: #dc3545;
         }
 
         @media (max-width: 768px) {
             .tabs {
-                flex-wrap: wrap;
+                flex-direction: column;
             }
             
             .apartment-grid {
                 grid-template-columns: 1fr;
             }
             
+            .filter-grid {
+                grid-template-columns: 1fr;
+            }
+
             .auth-info {
                 flex-direction: column;
                 gap: 10px;
             }
+        }
+
+        /* Map styles */
+        #map {
+            height: 600px;
+            width: 100%;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .map-sidebar {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+        }
+
+        .map-legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border: 2px solid white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .map-stats {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+        .map-stat-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        .leaflet-popup-content {
+            min-width: 200px;
+        }
+
+        .popup-title {
+            font-weight: 600;
+            font-size: 16px;
+            margin-bottom: 10px;
+            color: #2c3e50;
+        }
+
+        .popup-detail {
+            font-size: 14px;
+            margin-bottom: 5px;
+            color: #666;
+        }
+
+        .popup-price {
+            font-size: 18px;
+            font-weight: 600;
+            color: #667eea;
+            margin: 10px 0;
+        }
+
+        .popup-rating {
+            color: #ffd700;
+            margin-bottom: 10px;
+        }
+
+        .popup-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+
+        .popup-buttons .btn {
+            padding: 8px 12px;
+            font-size: 12px;
+        }
+
+        .google-maps-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            color: #4285f4;
+            text-decoration: none;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+
+        .google-maps-link:hover {
+            text-decoration: underline;
+        }
+        
+        .popup-missing-fees {
+            background: #fff5f5;
+            color: #ff6b6b;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            margin: 5px 0;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+            width: 90%;
         }
     </style>
 </head>
@@ -483,7 +770,7 @@
                     <span class="sync-indicator" id="sync-indicator"></span>
                     <span id="sync-text">Connecting...</span>
                 </div>
-                <div id="user-info" class="user-info" style="display: none;">
+                <div id="user-info" style="display: none;">
                     <img id="user-avatar" class="user-avatar" style="display: none;">
                     <span id="user-email"></span>
                     <button class="btn-link" onclick="signOut()">Sign Out</button>
@@ -493,12 +780,12 @@
     </header>
 
     <div class="container">
-        <div id="message-container" class="message-container"></div>
+        <div id="message-container"></div>
         
         <!-- Authentication Form -->
         <div id="auth-container" class="auth-container">
             <h2>Welcome to Your Apartment Tracker</h2>
-            <p>Sign in with your Google account to start tracking apartments</p>
+            <p style="margin-top: 20px; color: #666;">Sign in with your Google account to start tracking apartments</p>
             <button class="google-signin-btn" onclick="signInWithGoogle()">
                 <svg class="google-logo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
                     <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -510,11 +797,14 @@
             </button>
         </div>
 
-        <!-- Main Application -->
+        <!-- Main Application (Hidden until authenticated) -->
         <div id="main-content" class="main-content">
             <div class="tabs">
-                <button class="tab active" onclick="switchTab('add')">➕ Add Apartment</button>
-                <button class="tab" onclick="switchTab('list')">📋 View Apartments</button>
+                <button class="tab active" onclick="switchTab('add')">Add Apartment</button>
+                <button class="tab" onclick="switchTab('list')">View Apartments</button>
+                <button class="tab" onclick="switchTab('shortlist')">Shortlist</button>
+                <button class="tab" onclick="switchTab('compare')">Compare</button>
+                <button class="tab" onclick="switchTab('map')">Map View</button>
             </div>
 
             <!-- Add Apartment Tab -->
@@ -533,40 +823,161 @@
                         </div>
 
                         <div class="form-group">
-                            <label for="price">Monthly Rent (₪)</label>
-                            <input type="number" id="price" required>
+                            <label for="floor">Floor (e.g., 3/5)</label>
+                            <input type="text" id="floor" placeholder="3/5">
                         </div>
 
-                        <div class="checkbox-group">
-                            <input type="checkbox" id="parking">
-                            <label for="parking">Parking</label>
+                        <div class="form-group">
+                            <label for="size">Size (m²)</label>
+                            <input type="number" id="size">
                         </div>
 
-                        <div class="checkbox-group">
+                        <div class="form-group checkbox-group">
+                            <input type="checkbox" id="divided">
+                            <label for="divided">Divided</label>
+                        </div>
+
+                        <div class="form-group checkbox-group">
+                            <input type="checkbox" id="parkingPermit">
+                            <label for="parkingPermit">Parking Permit Available</label>
+                        </div>
+
+                        <div class="form-group checkbox-group">
+                            <input type="checkbox" id="shelter">
+                            <label for="shelter">Shelter Room</label>
+                        </div>
+
+                        <div class="form-group checkbox-group">
                             <input type="checkbox" id="elevator">
                             <label for="elevator">Elevator</label>
                         </div>
 
-                        <div class="checkbox-group">
+                        <div class="form-group checkbox-group">
+                            <input type="checkbox" id="parking">
+                            <label for="parking">Parking</label>
+                        </div>
+
+                        <div class="form-group checkbox-group">
+                            <input type="checkbox" id="sunHeatedWater">
+                            <label for="sunHeatedWater">Sun-heated Water Tank</label>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="price">Monthly Rent (₪)</label>
+                            <input type="number" id="price" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="arnona">Arnona (₪)</label>
+                            <input type="number" id="arnona">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="vaad">Building Committee (₪)</label>
+                            <input type="number" id="vaad">
+                        </div>
+
+                        <div class="form-group checkbox-group">
+                            <input type="checkbox" id="broker">
+                            <label for="broker">Through Broker</label>
+                        </div>
+
+                        <div class="form-group checkbox-group">
                             <input type="checkbox" id="visited">
                             <label for="visited">Visited Apartment</label>
                         </div>
 
                         <div class="form-group">
-                            <label>Overall Rating</label>
-                            <div class="rating-group" data-rating="overall">
+                            <label for="contactName">Contact Name</label>
+                            <input type="text" id="contactName">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="contactPhone">Contact Phone</label>
+                            <input type="tel" id="contactPhone">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="moveInDate">Move-in Date</label>
+                            <input type="date" id="moveInDate">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="listingUrl">Listing URL</label>
+                            <input type="text" id="listingUrl" placeholder="https://...">
+                        </div>
+
+                        <h3 style="margin-top: 30px; margin-bottom: 20px;">Ratings</h3>
+
+                        <div class="form-group">
+                            <label>Apartment Condition</label>
+                            <div class="rating-group" data-rating="condition">
                                 <span class="star" data-value="1">★</span>
                                 <span class="star" data-value="2">★</span>
                                 <span class="star" data-value="3">★</span>
                                 <span class="star" data-value="4">★</span>
                                 <span class="star" data-value="5">★</span>
-                                <button type="button" class="clear-rating" onclick="clearRating('overall')">Clear</button>
+                                <button type="button" class="clear-rating" onclick="clearRating('workLocation')">Clear</button>
                             </div>
                         </div>
 
                         <div class="form-group">
-                            <label for="notes">Notes</label>
-                            <textarea id="notes" rows="4" placeholder="Add notes about the apartment..."></textarea>
+                            <label>Area Parking</label>
+                            <div class="rating-group" data-rating="areaParking">
+                                <span class="star" data-value="1">★</span>
+                                <span class="star" data-value="2">★</span>
+                                <span class="star" data-value="3">★</span>
+                                <span class="star" data-value="4">★</span>
+                                <span class="star" data-value="5">★</span>
+                                <button type="button" class="clear-rating" onclick="clearRating('areaParking')">Clear</button>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Noise Level (5 = Very Quiet)</label>
+                            <div class="rating-group" data-rating="noise">
+                                <span class="star" data-value="1">★</span>
+                                <span class="star" data-value="2">★</span>
+                                <span class="star" data-value="3">★</span>
+                                <span class="star" data-value="4">★</span>
+                                <span class="star" data-value="5">★</span>
+                                <button type="button" class="clear-rating" onclick="clearRating('noise')">Clear</button>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Neighbors</label>
+                            <div class="rating-group" data-rating="neighbors">
+                                <span class="star" data-value="1">★</span>
+                                <span class="star" data-value="2">★</span>
+                                <span class="star" data-value="3">★</span>
+                                <span class="star" data-value="4">★</span>
+                                <span class="star" data-value="5">★</span>
+                                <button type="button" class="clear-rating" onclick="clearRating('neighbors')">Clear</button>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Privacy</label>
+                            <div class="rating-group" data-rating="privacy">
+                                <span class="star" data-value="1">★</span>
+                                <span class="star" data-value="2">★</span>
+                                <span class="star" data-value="3">★</span>
+                                <span class="star" data-value="4">★</span>
+                                <span class="star" data-value="5">★</span>
+                                <button type="button" class="clear-rating" onclick="clearRating('privacy')">Clear</button>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="notes">Notes (including post-visit/contact notes)</label>
+                            <textarea id="notes" rows="4" placeholder="Initial notes, impressions after visit, conversation details with owner..."></textarea>
+                        </div>
+
+                        <div class="image-upload-section">
+                            <label for="images">Upload Images (Max 5)</label>
+                            <input type="file" id="images" accept="image/*" multiple onchange="handleImageUpload(event)">
+                            <div id="image-preview" class="image-preview"></div>
                         </div>
 
                         <button type="submit" class="btn btn-primary" id="submit-btn">Save Apartment</button>
@@ -576,15 +987,148 @@
 
             <!-- View Apartments Tab -->
             <div id="list-tab" class="tab-content">
+                <div class="filter-section">
+                    <h3>Filters</h3>
+                    <div class="filter-grid">
+                        <div class="form-group">
+                            <label for="filter-city">City</label>
+                            <select id="filter-city">
+                                <option value="">All Cities</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="filter-max-price">Max Price</label>
+                            <input type="number" id="filter-max-price" placeholder="Maximum price">
+                        </div>
+                        <div class="form-group">
+                            <label for="filter-min-rating">Min Rating</label>
+                            <select id="filter-min-rating">
+                                <option value="">All</option>
+                                <option value="3">3★ and above</option>
+                                <option value="4">4★ and above</option>
+                                <option value="5">5★ only</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="filter-visited">Visit Status</label>
+                            <select id="filter-visited">
+                                <option value="">All</option>
+                                <option value="visited">Visited Only</option>
+                                <option value="not-visited">Not Visited Only</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="filter-relevance">Relevance</label>
+                            <select id="filter-relevance">
+                                <option value="relevant">Relevant Only</option>
+                                <option value="all">Show All</option>
+                                <option value="irrelevant">Irrelevant Only</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>&nbsp;</label>
+                            <button class="btn btn-primary" onclick="applyFilters()">Apply Filters</button>
+                        </div>
+                    </div>
+                </div>
+                
                 <div id="apartments-list" class="apartment-grid">
                     <div class="loading">Loading apartments...</div>
                 </div>
+                
+                <button class="btn btn-success" onclick="exportToCSV()" style="margin-top: 20px;">Export to CSV</button>
+            </div>
+
+            <!-- Shortlist Tab -->
+            <div id="shortlist-tab" class="tab-content">
+                <div class="card">
+                    <h2>Shortlist - Apartments to Contact/Visit</h2>
+                    <div id="shortlist-apartments">
+                        <div class="loading">Loading shortlist...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Compare Tab -->
+            <div id="compare-tab" class="tab-content">
+                <div class="card">
+                    <h2>Compare Apartments</h2>
+                    <div id="comparison-section">
+                        <p>Select apartments to compare from the list below:</p>
+                        <div id="comparison-checkboxes" style="margin: 20px 0;"></div>
+                        <button class="btn btn-primary" onclick="generateComparison()">Compare Selected</button>
+                        <div id="comparison-result"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Map Tab -->
+            <div id="map-tab" class="tab-content">
+                <div class="map-sidebar">
+                    <h3>Map View</h3>
+                    <div class="map-legend">
+                        <div class="legend-item">
+                            <div class="legend-color" style="background-color: #28a745;"></div>
+                            <span>₪4,500 - ₪5,500</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background-color: #ffa500;"></div>
+                            <span>₪5,500 - ₪6,500</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background-color: #dc3545;"></div>
+                            <span>Above ₪6,500</span>
+                        </div>
+                    </div>
+                    
+                    <div class="filter-section">
+                        <h4>Map Filters</h4>
+                        <div class="form-group">
+                            <label for="map-filter-city">City</label>
+                            <select id="map-filter-city" onchange="updateMapMarkers()">
+                                <option value="">All Cities</option>
+                            </select>
+                        </div>
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="map-filter-visited" onchange="updateMapMarkers()">
+                            <label for="map-filter-visited">Visited Only</label>
+                        </div>
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="map-filter-parking" onchange="updateMapMarkers()">
+                            <label for="map-filter-parking">With Parking</label>
+                        </div>
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="map-filter-elevator" onchange="updateMapMarkers()">
+                            <label for="map-filter-elevator">With Elevator</label>
+                        </div>
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="map-filter-relevant" checked onchange="updateMapMarkers()">
+                            <label for="map-filter-relevant">Relevant Only</label>
+                        </div>
+                    </div>
+                    
+                    <div class="map-stats" id="map-stats">
+                        <div class="map-stat-item">
+                            <span>Apartments shown:</span>
+                            <span id="map-count">0</span>
+                        </div>
+                        <div class="map-stat-item">
+                            <span>Average price:</span>
+                            <span id="map-avg-price">₪0</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="map"></div>
             </div>
         </div>
     </div>
 
     <script>
+        // ========================================
         // Firebase Configuration
+        // ========================================
+        
         const firebaseConfig = {
             apiKey: "AIzaSyBl1t5NahZ44fToeiGa78qSvuhvPwzySAc",
             authDomain: "app-tracker-7d451.firebaseapp.com",
@@ -601,33 +1145,52 @@
         const database = firebase.database();
         const auth = firebase.auth();
         
+        // ========================================
         // Global Variables
+        // ========================================
+        
         let apartments = {};
-        let currentUser = null;
+        let currentImages = [];
         let editingId = null;
+        let sortColumn = null;
+        let sortDirection = 'asc';
+        let isOnline = true;
+        let currentUser = null;
+        let map = null;
+        let markers = [];
+        let geocodeCache = {};
 
+        // ========================================
         // Authentication Functions
+        // ========================================
+        
+        // Monitor authentication state
         auth.onAuthStateChanged((user) => {
             currentUser = user;
             if (user) {
+                // User is signed in
                 document.getElementById('auth-container').style.display = 'none';
                 document.getElementById('main-content').classList.add('authenticated');
                 document.getElementById('user-info').style.display = 'flex';
                 document.getElementById('user-email').textContent = user.email;
                 
+                // Show user avatar if available
                 if (user.photoURL) {
                     const avatar = document.getElementById('user-avatar');
                     avatar.src = user.photoURL;
                     avatar.style.display = 'inline-block';
                 }
                 
+                // Setup database listeners for authenticated user
                 setupDatabaseListeners();
                 updateSyncStatus(true);
                 showMessage('success', `Welcome back, ${user.displayName || user.email}!`);
             } else {
+                // User is signed out
                 document.getElementById('auth-container').style.display = 'block';
                 document.getElementById('main-content').classList.remove('authenticated');
                 document.getElementById('user-info').style.display = 'none';
+                document.getElementById('user-avatar').style.display = 'none';
                 apartments = {};
                 updateSyncStatus(false);
             }
@@ -638,10 +1201,32 @@
             const provider = new firebase.auth.GoogleAuthProvider();
             
             try {
-                await auth.signInWithPopup(provider);
+                // For local file usage, use signInWithPopup
+                const result = await auth.signInWithPopup(provider);
+                // Success handled by onAuthStateChanged
             } catch (error) {
                 console.error('Google sign-in error:', error);
-                showMessage('error', 'Sign in failed: ' + error.message);
+                let errorMessage = 'Sign in failed: ';
+                switch (error.code) {
+                    case 'auth/popup-closed-by-user':
+                        errorMessage += 'Sign-in popup was closed';
+                        break;
+                    case 'auth/popup-blocked':
+                        errorMessage += 'Sign-in popup was blocked by browser';
+                        break;
+                    case 'auth/cancelled-popup-request':
+                        errorMessage += 'Another sign-in request is already in progress';
+                        break;
+                    case 'auth/network-request-failed':
+                        errorMessage += 'Network error. Please check your connection';
+                        break;
+                    case 'auth/unauthorized-domain':
+                        errorMessage += 'This domain is not authorized for sign-in. Contact the developer.';
+                        break;
+                    default:
+                        errorMessage += error.message;
+                }
+                showMessage('error', errorMessage);
             }
         }
 
@@ -655,7 +1240,11 @@
             }
         }
 
-        // Database Functions
+        // ========================================
+        // Firebase Database Functions
+        // ========================================
+        
+        // Listen for apartments changes (only for authenticated user)
         function setupDatabaseListeners() {
             if (!currentUser) return;
             
@@ -664,13 +1253,21 @@
             userApartmentsRef.on('value', (snapshot) => {
                 apartments = snapshot.val() || {};
                 loadApartments();
+                updateCityDropdowns();
                 updateSyncStatus(true);
             }, (error) => {
                 showMessage('error', 'Failed to load apartments: ' + error.message);
                 updateSyncStatus(false);
             });
+            
+            // Monitor connection status
+            database.ref('.info/connected').on('value', (snapshot) => {
+                isOnline = snapshot.val() === true;
+                updateSyncStatus(isOnline && currentUser);
+            });
         }
 
+        // Update sync status indicator
         function updateSyncStatus(online) {
             const indicator = document.getElementById('sync-indicator');
             const text = document.getElementById('sync-text');
@@ -687,6 +1284,7 @@
             }
         }
 
+        // Save apartment to Firebase (user-specific)
         function saveApartmentToFirebase(apartmentData, apartmentId = null) {
             if (!currentUser) {
                 throw new Error('User not authenticated');
@@ -695,12 +1293,15 @@
             const userApartmentsRef = database.ref(`users/${currentUser.uid}/apartments`);
             
             if (apartmentId) {
+                // Update existing
                 return userApartmentsRef.child(apartmentId).set(apartmentData);
             } else {
+                // Add new
                 return userApartmentsRef.push(apartmentData);
             }
         }
 
+        // Delete apartment from Firebase (user-specific)
         function deleteApartmentFromFirebase(apartmentId) {
             if (!currentUser) {
                 throw new Error('User not authenticated');
@@ -709,43 +1310,83 @@
             return database.ref(`users/${currentUser.uid}/apartments/${apartmentId}`).remove();
         }
 
+        // ========================================
+        // Initialize Application
+        // ========================================
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            setupRatingListeners();
+            setupFormListener();
+            
+            // Enable offline persistence
+            firebase.database().goOffline();
+            firebase.database().goOnline();
+        });
+
+        // ========================================
         // UI Functions
+        // ========================================
+        
+        // Show message (replaces showError)
         function showMessage(type, message) {
             const messageContainer = document.getElementById('message-container');
             const className = type === 'error' ? 'error-message' : 'success-message';
-            const icon = type === 'error' ? '❌' : '✅';
-            messageContainer.innerHTML = `<div class="${className}">${icon} ${message}</div>`;
+            messageContainer.innerHTML = `<div class="${className}">${message}</div>`;
             setTimeout(() => {
                 messageContainer.innerHTML = '';
             }, 5000);
         }
 
+        // Tab switching
         function switchTab(tab) {
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
             
+            // Find the correct tab button
             const tabButtons = document.querySelectorAll('.tab');
-            const tabIndex = ['add', 'list'].indexOf(tab);
-            if (tabIndex >= 0) {
-                tabButtons[tabIndex].classList.add('active');
-            }
+            tabButtons.forEach(btn => {
+                if (btn.textContent.toLowerCase().includes(tab)) {
+                    btn.classList.add('active');
+                }
+            });
             
             document.getElementById(`${tab}-tab`).classList.add('active');
             
             if (tab === 'list') {
                 loadApartments();
+            } else if (tab === 'shortlist') {
+                loadShortlist();
+            } else if (tab === 'compare') {
+                loadComparisonCheckboxes();
+            } else if (tab === 'map') {
+                initializeMap();
+            } else if (tab === 'add' && !editingId) {
+                // Reset form only if not editing
+                document.getElementById('apartment-form').reset();
+                currentImages = [];
+                document.getElementById('image-preview').innerHTML = '';
+                document.querySelectorAll('.rating-group').forEach(group => {
+                    group.removeAttribute('data-value');
+                    group.querySelectorAll('.star').forEach(star => {
+                        star.classList.remove('active');
+                        star.style.color = '#ddd';
+                    });
+                });
+                document.querySelector('#apartment-form button[type="submit"]').textContent = 'Save Apartment';
             }
         }
 
+        // Clear rating function
         function clearRating(ratingType) {
             const group = document.querySelector(`[data-rating="${ratingType}"]`);
             group.removeAttribute('data-value');
             group.querySelectorAll('.star').forEach(star => {
                 star.classList.remove('active');
-                star.style.color = '#e5e7eb';
+                star.style.color = '#ddd';
             });
         }
 
+        // Rating system
         function setupRatingListeners() {
             document.querySelectorAll('.rating-group').forEach(group => {
                 const stars = group.querySelectorAll('.star');
@@ -756,38 +1397,58 @@
                         stars.forEach((s, i) => {
                             if (i < rating) {
                                 s.classList.add('active');
-                                s.style.color = '#fbbf24';
                             } else {
                                 s.classList.remove('active');
-                                s.style.color = '#e5e7eb';
                             }
                         });
                     });
                     
+                    // Add hover effect
                     star.addEventListener('mouseenter', () => {
                         stars.forEach((s, i) => {
                             if (i <= index) {
-                                s.style.color = '#fbbf24';
+                                s.style.color = '#ffd700';
                             } else {
-                                s.style.color = '#e5e7eb';
+                                s.style.color = '#ddd';
                             }
                         });
                     });
                 });
                 
+                // Reset hover effect when mouse leaves the rating group
                 group.addEventListener('mouseleave', () => {
                     stars.forEach((s, i) => {
                         const currentRating = parseInt(group.getAttribute('data-value')) || 0;
                         if (i < currentRating) {
-                            s.style.color = '#fbbf24';
+                            s.style.color = '#ffd700';
                         } else {
-                            s.style.color = '#e5e7eb';
+                            s.style.color = '#ddd';
                         }
                     });
                 });
             });
         }
 
+        // Image handling
+        function handleImageUpload(event) {
+            const files = Array.from(event.target.files).slice(0, 5);
+            currentImages = [];
+            const preview = document.getElementById('image-preview');
+            preview.innerHTML = '';
+            
+            files.forEach(file => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    currentImages.push(e.target.result);
+                    const img = document.createElement('img');
+                    img.src = e.target.result;
+                    preview.appendChild(img);
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // Form submission
         function setupFormListener() {
             document.getElementById('apartment-form').addEventListener('submit', async function(e) {
                 e.preventDefault();
@@ -799,18 +1460,44 @@
                 
                 const submitBtn = document.getElementById('submit-btn');
                 submitBtn.disabled = true;
-                submitBtn.textContent = 'Saving...';
+                submitBtn.textContent = editingId ? 'Updating...' : 'Saving...';
                 
                 const formData = {
                     address: document.getElementById('address').value,
                     city: document.getElementById('city').value,
-                    price: parseInt(document.getElementById('price').value),
-                    parking: document.getElementById('parking').checked,
+                    floor: document.getElementById('floor').value,
+                    size: document.getElementById('size').value,
+                    divided: document.getElementById('divided').checked,
+                    parkingPermit: document.getElementById('parkingPermit').checked,
+                    shelter: document.getElementById('shelter').checked,
                     elevator: document.getElementById('elevator').checked,
+                    parking: document.getElementById('parking').checked,
+                    sunHeatedWater: document.getElementById('sunHeatedWater').checked,
+                    price: parseInt(document.getElementById('price').value),
+                    arnona: parseInt(document.getElementById('arnona').value) || 0,
+                    vaad: parseInt(document.getElementById('vaad').value) || 0,
+                    broker: document.getElementById('broker').checked,
                     visited: document.getElementById('visited').checked,
-                    rating: parseInt(document.querySelector('[data-rating="overall"]').getAttribute('data-value')) || 0,
+                    contactName: document.getElementById('contactName').value,
+                    contactPhone: document.getElementById('contactPhone').value,
+                    moveInDate: document.getElementById('moveInDate').value,
+                    listingUrl: document.getElementById('listingUrl').value,
                     notes: document.getElementById('notes').value,
-                    createdAt: Date.now(),
+                    images: currentImages.length > 0 ? currentImages : (editingId && apartments[editingId] ? apartments[editingId].images : []),
+                    ratings: {
+                        condition: parseInt(document.querySelector('[data-rating="condition"]').getAttribute('data-value')) || 0,
+                        leisureLocation: parseInt(document.querySelector('[data-rating="leisureLocation"]').getAttribute('data-value')) || 0,
+                        workLocation: parseInt(document.querySelector('[data-rating="workLocation"]').getAttribute('data-value')) || 0,
+                        areaParking: parseInt(document.querySelector('[data-rating="areaParking"]').getAttribute('data-value')) || 0,
+                        noise: parseInt(document.querySelector('[data-rating="noise"]').getAttribute('data-value')) || 0,
+                        neighbors: parseInt(document.querySelector('[data-rating="neighbors"]').getAttribute('data-value')) || 0,
+                        privacy: parseInt(document.querySelector('[data-rating="privacy"]').getAttribute('data-value')) || 0
+                    },
+                    irrelevant: editingId && apartments[editingId] ? apartments[editingId].irrelevant || false : false,
+                    irrelevantReason: editingId && apartments[editingId] ? apartments[editingId].irrelevantReason || '' : '',
+                    shortlisted: editingId && apartments[editingId] ? apartments[editingId].shortlisted || false : false,
+                    shortlistNote: editingId && apartments[editingId] ? apartments[editingId].shortlistNote || '' : '',
+                    createdAt: editingId && apartments[editingId] ? apartments[editingId].createdAt : Date.now(),
                     updatedAt: Date.now()
                 };
                 
@@ -820,14 +1507,16 @@
                     
                     // Reset form
                     this.reset();
+                    currentImages = [];
                     editingId = null;
+                    document.getElementById('image-preview').innerHTML = '';
                     
-                    // Reset rating
+                    // Reset all ratings
                     document.querySelectorAll('.rating-group').forEach(group => {
                         group.removeAttribute('data-value');
                         group.querySelectorAll('.star').forEach(star => {
                             star.classList.remove('active');
-                            star.style.color = '#e5e7eb';
+                            star.style.color = '#ddd';
                         });
                     });
                     
@@ -840,52 +1529,111 @@
             });
         }
 
-        async function deleteApartment(id) {
-            if (!confirm('Are you sure you want to delete this apartment?')) return;
+        // Update city dropdowns
+        function updateCityDropdowns() {
+            const cities = new Set();
+            Object.values(apartments).forEach(apt => {
+                if (apt.city) cities.add(apt.city);
+            });
             
-            try {
-                await deleteApartmentFromFirebase(id);
-                showMessage('success', 'Apartment deleted successfully');
-            } catch (error) {
-                showMessage('error', 'Failed to delete apartment: ' + error.message);
-            }
+            const cityArray = Array.from(cities).sort();
+            
+            // Update apartments view city filter
+            const filterCity = document.getElementById('filter-city');
+            filterCity.innerHTML = '<option value="">All Cities</option>';
+            cityArray.forEach(city => {
+                filterCity.innerHTML += `<option value="${city}">${city}</option>`;
+            });
+            
+            // Update map view city filter
+            const mapFilterCity = document.getElementById('map-filter-city');
+            mapFilterCity.innerHTML = '<option value="">All Cities</option>';
+            cityArray.forEach(city => {
+                mapFilterCity.innerHTML += `<option value="${city}">${city}</option>`;
+            });
         }
 
-        function editApartment(id) {
+        // Check if apartment has missing fees
+        function hasMissingFees(apt) {
+            return !apt.arnona || apt.arnona === 0 || !apt.vaad || apt.vaad === 0;
+        }
+
+        // Toggle shortlist status
+        async function toggleShortlist(id) {
             const apt = apartments[id];
             if (!apt) return;
             
-            editingId = id;
-            
-            // Populate form
-            document.getElementById('address').value = apt.address || '';
-            document.getElementById('city').value = apt.city || '';
-            document.getElementById('price').value = apt.price || '';
-            document.getElementById('parking').checked = apt.parking || false;
-            document.getElementById('elevator').checked = apt.elevator || false;
-            document.getElementById('visited').checked = apt.visited || false;
-            document.getElementById('notes').value = apt.notes || '';
-            
-            // Set rating
-            if (apt.rating) {
-                const group = document.querySelector('[data-rating="overall"]');
-                group.setAttribute('data-value', apt.rating);
-                const stars = group.querySelectorAll('.star');
-                stars.forEach((star, i) => {
-                    if (i < apt.rating) {
-                        star.classList.add('active');
-                        star.style.color = '#fbbf24';
-                    } else {
-                        star.classList.remove('active');
-                        star.style.color = '#e5e7eb';
-                    }
-                });
+            if (!apt.shortlisted && apt.irrelevant) {
+                showMessage('error', 'Cannot add irrelevant apartment to shortlist');
+                return;
             }
             
-            document.getElementById('submit-btn').textContent = 'Update Apartment';
-            switchTab('add');
+            apt.shortlisted = !apt.shortlisted;
+            
+            if (apt.shortlisted) {
+                const note = prompt('Add a shortlist note (optional - e.g., "call after 5pm", "prefers WhatsApp"):');
+                if (note !== null) {
+                    apt.shortlistNote = note;
+                }
+            } else {
+                apt.shortlistNote = '';
+            }
+            
+            try {
+                await saveApartmentToFirebase(apt, id);
+                showMessage('success', apt.shortlisted ? 'Added to shortlist!' : 'Removed from shortlist');
+                loadApartments();
+                if (document.getElementById('shortlist-tab').classList.contains('active')) {
+                    loadShortlist();
+                }
+            } catch (error) {
+                showMessage('error', 'Failed to update shortlist: ' + error.message);
+            }
         }
 
+        // Mark apartment as irrelevant
+        async function markIrrelevant(id) {
+            const apt = apartments[id];
+            if (!apt) return;
+            
+            const reason = prompt('Why is this apartment irrelevant? (e.g., "too expensive after negotiation", "not available on needed date"):');
+            if (reason === null) return;
+            
+            apt.irrelevant = true;
+            apt.irrelevantReason = reason;
+            apt.shortlisted = false; // Remove from shortlist if marked irrelevant
+            apt.shortlistNote = '';
+            
+            try {
+                await saveApartmentToFirebase(apt, id);
+                showMessage('success', 'Apartment marked as irrelevant');
+                loadApartments();
+                if (document.getElementById('shortlist-tab').classList.contains('active')) {
+                    loadShortlist();
+                }
+            } catch (error) {
+                showMessage('error', 'Failed to mark as irrelevant: ' + error.message);
+            }
+        }
+
+        // Mark apartment as relevant again
+        async function markRelevant(id) {
+            const apt = apartments[id];
+            if (!apt) return;
+            
+            apt.irrelevant = false;
+            apt.irrelevantReason = '';
+            
+            try {
+                await saveApartmentToFirebase(apt, id);
+                showMessage('success', 'Apartment marked as relevant again');
+                loadApartments();
+            } catch (error) {
+                showMessage('error', 'Failed to mark as relevant: ' + error.message);
+            }
+        }
+
+        // Load apartments
         function loadApartments() {
             const list = document.getElementById('apartments-list');
             list.innerHTML = '';
@@ -896,41 +1644,858 @@
             }));
             
             if (apartmentArray.length === 0) {
-                list.innerHTML = '<div class="empty-state"><div class="empty-state-icon">🏠</div><div class="empty-state-text">No apartments yet</div><div class="empty-state-subtext">Add your first apartment to get started!</div></div>';
+                list.innerHTML = '<div class="loading">No apartments yet. Add your first apartment!</div>';
                 return;
             }
             
-            apartmentArray.forEach(apt => {
-                const card = document.createElement('div');
-                card.className = 'apartment-card';
+            // Apply default filter - hide irrelevant apartments
+            const relevanceFilter = document.getElementById('filter-relevance').value || 'relevant';
+            const filtered = apartmentArray.filter(apt => {
+                if (relevanceFilter === 'relevant') return !apt.irrelevant;
+                if (relevanceFilter === 'irrelevant') return apt.irrelevant;
+                return true;
+            });
+            
+            if (filtered.length === 0) {
+                list.innerHTML = '<div class="loading">No apartments match your filters.</div>';
+                return;
+            }
+            
+            filtered.forEach(apt => {
+                const totalCost = apt.price + apt.arnona + apt.vaad;
+                const avgRating = Object.values(apt.ratings).reduce((a, b) => a + b, 0) / Object.keys(apt.ratings).length;
+                const missingFees = hasMissingFees(apt);
                 
+                const card = document.createElement('div');
+                card.className = `apartment-card ${apt.irrelevant ? 'irrelevant' : ''}`;
                 card.innerHTML = `
-                    <div class="apartment-title">${apt.address}</div>
-                    <div style="color: #6b7280; font-size: 14px; margin-bottom: 8px;">📍 ${apt.city}</div>
-                    <div class="apartment-price">₪${apt.price.toLocaleString()}</div>
-                    <div style="margin: 12px 0;">
-                        <div style="font-size: 14px; color: #4b5563; margin-bottom: 4px;">
-                            ${apt.parking ? '<span style="color: #10b981;">✓</span>' : '<span style="color: #ef4444;">✗</span>'} Parking
-                            | ${apt.elevator ? '<span style="color: #10b981;">✓</span>' : '<span style="color: #ef4444;">✗</span>'} Elevator
-                            | ${apt.visited ? '<span style="color: #10b981;">✓ Visited</span>' : '<span style="color: #f59e0b;">⏳ Not visited</span>'}
+                    ${apt.irrelevant ? '<div class="irrelevant-badge">Irrelevant</div>' : ''}
+                    ${apt.shortlisted ? '<div class="shortlist-badge">Shortlisted</div>' : ''}
+                    ${missingFees ? '<div class="missing-fees-indicator" data-tooltip="Missing Arnona or Building Committee fees">!</div>' : ''}
+                    <div class="apartment-header">
+                        <div>
+                            <div class="apartment-title">${apt.address}</div>
+                            <div style="color: #666; font-size: 14px;">${apt.city} ${apt.visited ? '✓ Visited' : '⏳ Not visited'}</div>
                         </div>
-                        ${apt.rating ? `<div style="color: #fbbf24; font-size: 16px;">${'★'.repeat(apt.rating)} (${apt.rating}/5)</div>` : ''}
+                        <div class="apartment-price">₪${apt.price}</div>
                     </div>
-                    ${apt.notes ? `<div style="background: #f9fafb; padding: 12px; border-radius: 8px; font-size: 14px; margin: 12px 0;">${apt.notes}</div>` : ''}
-                    <div class="apartment-actions">
-                        <button class="btn btn-sm btn-primary" onclick="editApartment('${apt.id}')">✏️ Edit</button>
-                        <button class="btn btn-sm btn-danger" onclick="deleteApartment('${apt.id}')">🗑️ Delete</button>
+                    <div class="apartment-details">
+                        <div class="detail-item">Floor: ${apt.floor || 'N/A'}</div>
+                        <div class="detail-item">Size: ${apt.size || 'N/A'} m²</div>
+                        <div class="detail-item">${apt.elevator ? '✓ Elevator' : '✗ No Elevator'}</div>
+                        <div class="detail-item">${apt.parking ? '✓ Parking' : '✗ No Parking'}</div>
+                        <div class="detail-item">${apt.sunHeatedWater ? '✓ Sun-heated Water' : '✗ No Sun-heated Water'}</div>
+                        ${apt.moveInDate ? `<div class="detail-item">Move-in: ${new Date(apt.moveInDate).toLocaleDateString('en-GB')}</div>` : ''}
+                    </div>
+                    <div class="total-cost">Total Monthly: ₪${totalCost}</div>
+                    <div class="rating-summary">
+                        <div class="rating-item">
+                            <span>Average Rating</span>
+                            <span>${'★'.repeat(Math.round(avgRating))} (${avgRating.toFixed(1)})</span>
+                        </div>
+                    </div>
+                    ${apt.irrelevantReason ? `<div class="irrelevant-reason">Reason: ${apt.irrelevantReason}</div>` : ''}
+                    <div style="margin-top: 15px;">
+                        <button class="btn btn-secondary" onclick="viewDetails('${apt.id}')">View Details</button>
+                        ${apt.listingUrl ? `<button class="btn btn-success" onclick="window.open('${apt.listingUrl}', '_blank')">View Listing</button>` : ''}
+                        <button class="btn btn-primary" onclick="editApartment('${apt.id}')">Edit</button>
+                        <button class="btn btn-danger" onclick="deleteApartment('${apt.id}')">Delete</button>
+                        ${!apt.irrelevant ? `
+                            <button class="btn btn-warning btn-sm" onclick="toggleShortlist('${apt.id}')">${apt.shortlisted ? 'Remove from Shortlist' : 'Add to Shortlist'}</button>
+                            <button class="btn btn-danger btn-sm" onclick="markIrrelevant('${apt.id}')">Mark Irrelevant</button>
+                        ` : `
+                            <button class="btn btn-success btn-sm" onclick="markRelevant('${apt.id}')">Mark Relevant</button>
+                        `}
+                        <a href="${getGoogleMapsLink(apt.address, apt.city)}" target="_blank" class="google-maps-link">
+                            📍 Open in Google Maps
+                        </a>
                     </div>
                 `;
                 list.appendChild(card);
             });
         }
 
-        // Initialize Application
-        document.addEventListener('DOMContentLoaded', function() {
-            setupRatingListeners();
-            setupFormListener();
-        });
+        // Load shortlist
+        function loadShortlist() {
+            const container = document.getElementById('shortlist-apartments');
+            container.innerHTML = '';
+            
+            const shortlisted = Object.entries(apartments)
+                .filter(([id, apt]) => apt.shortlisted && !apt.irrelevant)
+                .map(([id, data]) => ({ id, ...data }));
+            
+            if (shortlisted.length === 0) {
+                container.innerHTML = '<div class="loading">No apartments in shortlist. Add apartments from the View Apartments tab!</div>';
+                return;
+            }
+            
+            shortlisted.forEach(apt => {
+                const totalCost = apt.price + apt.arnona + apt.vaad;
+                
+                const card = document.createElement('div');
+                card.className = 'shortlist-card';
+                card.innerHTML = `
+                    <div class="shortlist-header">
+                        <h3>${apt.address}, ${apt.city}</h3>
+                        <button class="btn btn-danger btn-sm" onclick="toggleShortlist('${apt.id}')">Remove from Shortlist</button>
+                    </div>
+                    <div class="shortlist-info">
+                        <div>
+                            <strong>Monthly Cost:</strong><br>
+                            ₪${apt.price} + ₪${apt.arnona} + ₪${apt.vaad} = <strong>₪${totalCost}</strong>
+                        </div>
+                        <div>
+                            <strong>Contact:</strong><br>
+                            ${apt.contactName || 'No name'}<br>
+                            ${apt.contactPhone ? `<a href="tel:${apt.contactPhone}">${apt.contactPhone}</a>` : 'No phone'}
+                        </div>
+                        <div>
+                            <strong>Move-in Date:</strong><br>
+                            ${apt.moveInDate ? new Date(apt.moveInDate).toLocaleDateString('en-GB') : 'Not specified'}
+                        </div>
+                        <div>
+                            <strong>Status:</strong><br>
+                            ${apt.visited ? '✓ Visited' : '⏳ Not visited yet'}
+                        </div>
+                    </div>
+                    ${apt.listingUrl ? `
+                        <div style="margin-top: 15px;">
+                            <strong>Listing:</strong> <a href="${apt.listingUrl}" target="_blank" class="btn btn-success btn-sm">View Original Ad</a>
+                        </div>
+                    ` : ''}
+                    ${apt.shortlistNote ? `
+                        <div class="shortlist-note">
+                            <strong>Shortlist Note:</strong> ${apt.shortlistNote}
+                        </div>
+                    ` : ''}
+                    <div style="margin-top: 15px;">
+                        <label for="shortlist-note-${apt.id}">Update shortlist note:</label>
+                        <input type="text" id="shortlist-note-${apt.id}" class="add-shortlist-note" 
+                               value="${apt.shortlistNote || ''}" 
+                               placeholder="e.g., call after 5pm, prefers WhatsApp...">
+                        <button class="btn btn-primary btn-sm" onclick="updateShortlistNote('${apt.id}')">Update Note</button>
+                        <button class="btn btn-secondary btn-sm" onclick="viewDetails('${apt.id}')">Full Details</button>
+                        <a href="${getGoogleMapsLink(apt.address, apt.city)}" target="_blank" class="google-maps-link">
+                            📍 Google Maps
+                        </a>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // Update shortlist note
+        async function updateShortlistNote(id) {
+            const apt = apartments[id];
+            if (!apt) return;
+            
+            const noteInput = document.getElementById(`shortlist-note-${id}`);
+            apt.shortlistNote = noteInput.value;
+            
+            try {
+                await saveApartmentToFirebase(apt, id);
+                showMessage('success', 'Shortlist note updated!');
+            } catch (error) {
+                showMessage('error', 'Failed to update note: ' + error.message);
+            }
+        }
+
+        // View apartment details
+        function viewDetails(id) {
+            const apt = apartments[id];
+            if (!apt) return;
+            
+            const modal = document.createElement('div');
+            modal.className = 'modal-overlay';
+            
+            const content = document.createElement('div');
+            content.className = 'modal-content';
+            
+            const totalCost = apt.price + apt.arnona + apt.vaad;
+            
+            content.innerHTML = `
+                <h2>${apt.address}, ${apt.city}</h2>
+                ${apt.irrelevant ? `<div class="irrelevant-badge" style="position: static; display: inline-block; margin-bottom: 10px;">Irrelevant</div>` : ''}
+                ${apt.shortlisted ? `<div class="shortlist-badge" style="position: static; display: inline-block; margin-bottom: 10px;">Shortlisted</div>` : ''}
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin: 20px 0;">
+                    <div><strong>Floor:</strong> ${apt.floor || 'N/A'}</div>
+                    <div><strong>Size:</strong> ${apt.size || 'N/A'} m²</div>
+                    <div><strong>Monthly Rent:</strong> ₪${apt.price}</div>
+                    <div><strong>Arnona:</strong> ₪${apt.arnona}</div>
+                    <div><strong>Building Committee:</strong> ₪${apt.vaad}</div>
+                    <div><strong>Total Monthly:</strong> ₪${totalCost}</div>
+                    <div><strong>Divided:</strong> ${apt.divided ? 'Yes' : 'No'}</div>
+                    <div><strong>Parking Permit:</strong> ${apt.parkingPermit ? 'Yes' : 'No'}</div>
+                    <div><strong>Shelter:</strong> ${apt.shelter ? 'Yes' : 'No'}</div>
+                    <div><strong>Elevator:</strong> ${apt.elevator ? 'Yes' : 'No'}</div>
+                    <div><strong>Parking:</strong> ${apt.parking ? 'Yes' : 'No'}</div>
+                    <div><strong>Sun-heated Water:</strong> ${apt.sunHeatedWater ? 'Yes' : 'No'}</div>
+                    <div><strong>Through Broker:</strong> ${apt.broker ? 'Yes' : 'No'}</div>
+                    <div><strong>Visited:</strong> ${apt.visited ? 'Yes ✓' : 'No ⏳'}</div>
+                    <div><strong>Contact:</strong> ${apt.contactName || 'N/A'}</div>
+                    <div><strong>Phone:</strong> ${apt.contactPhone || 'N/A'}</div>
+                    ${apt.moveInDate ? `<div><strong>Move-in Date:</strong> ${new Date(apt.moveInDate).toLocaleDateString('en-GB')}</div>` : ''}
+                    ${apt.listingUrl ? `<div><strong>Listing:</strong> <a href="${apt.listingUrl}" target="_blank" style="color: #667eea;">View Original Listing</a></div>` : ''}
+                    <div style="grid-column: span 2;"><a href="${getGoogleMapsLink(apt.address, apt.city)}" target="_blank" class="google-maps-link">📍 View on Google Maps</a></div>
+                </div>
+                
+                <h3>Ratings</h3>
+                <div style="margin: 15px 0;">
+                    <div class="rating-item">
+                        <span>Condition</span>
+                        <span>${'★'.repeat(apt.ratings.condition || 0)}</span>
+                    </div>
+                    <div class="rating-item">
+                        <span>Location for Leisure</span>
+                        <span>${'★'.repeat(apt.ratings.leisureLocation || 0)}</span>
+                    </div>
+                    <div class="rating-item">
+                        <span>Location for Work</span>
+                        <span>${'★'.repeat(apt.ratings.workLocation || 0)}</span>
+                    </div>
+                    <div class="rating-item">
+                        <span>Area Parking</span>
+                        <span>${'★'.repeat(apt.ratings.areaParking || 0)}</span>
+                    </div>
+                    <div class="rating-item">
+                        <span>Noise Level</span>
+                        <span>${'★'.repeat(apt.ratings.noise || 0)}</span>
+                    </div>
+                    <div class="rating-item">
+                        <span>Neighbors</span>
+                        <span>${'★'.repeat(apt.ratings.neighbors || 0)}</span>
+                    </div>
+                    <div class="rating-item">
+                        <span>Privacy</span>
+                        <span>${'★'.repeat(apt.ratings.privacy || 0)}</span>
+                    </div>
+                </div>
+                
+                ${apt.notes ? `<div><strong>Notes:</strong><br>${apt.notes.replace(/\n/g, '<br>')}</div>` : ''}
+                ${apt.irrelevantReason ? `<div class="irrelevant-reason" style="margin-top: 15px;"><strong>Irrelevant Reason:</strong> ${apt.irrelevantReason}</div>` : ''}
+                ${apt.shortlistNote ? `<div class="shortlist-note" style="margin-top: 15px;"><strong>Shortlist Note:</strong> ${apt.shortlistNote}</div>` : ''}
+                
+                ${apt.images && apt.images.length > 0 ? `
+                    <h3 style="margin-top: 20px;">Images</h3>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        ${apt.images.map(img => `<img src="${img}" style="width: 150px; height: 150px; object-fit: cover; border-radius: 8px; cursor: pointer;" onclick="window.open('${img}', '_blank')">`).join('')}
+                    </div>
+                ` : ''}
+                
+                <button class="btn btn-secondary" style="margin-top: 20px;" onclick="this.parentElement.parentElement.remove()">Close</button>
+            `;
+            
+            modal.appendChild(content);
+            document.body.appendChild(modal);
+            modal.addEventListener('click', function(e) {
+                if (e.target === modal) modal.remove();
+            });
+        }
+
+        // Delete apartment
+        async function deleteApartment(id) {
+            if (confirm('Are you sure you want to delete this apartment?')) {
+                try {
+                    await deleteApartmentFromFirebase(id);
+                    showMessage('success', 'Apartment deleted successfully!');
+                } catch (error) {
+                    showMessage('error', 'Failed to delete apartment: ' + error.message);
+                }
+            }
+        }
+
+        // Edit apartment
+        function editApartment(id) {
+            const apt = apartments[id];
+            if (!apt) return;
+            
+            editingId = id;
+            
+            // Switch to Add tab
+            switchTab('add');
+            document.querySelector('.tab').classList.add('active');
+            document.getElementById('add-tab').classList.add('active');
+            
+            // Fill form with apartment data
+            document.getElementById('address').value = apt.address;
+            document.getElementById('city').value = apt.city;
+            document.getElementById('floor').value = apt.floor || '';
+            document.getElementById('size').value = apt.size || '';
+            document.getElementById('divided').checked = apt.divided;
+            document.getElementById('parkingPermit').checked = apt.parkingPermit;
+            document.getElementById('shelter').checked = apt.shelter;
+            document.getElementById('elevator').checked = apt.elevator;
+            document.getElementById('parking').checked = apt.parking;
+            document.getElementById('sunHeatedWater').checked = apt.sunHeatedWater || false;
+            document.getElementById('price').value = apt.price;
+            document.getElementById('arnona').value = apt.arnona || '';
+            document.getElementById('vaad').value = apt.vaad || '';
+            document.getElementById('broker').checked = apt.broker;
+            document.getElementById('visited').checked = apt.visited || false;
+            document.getElementById('contactName').value = apt.contactName || '';
+            document.getElementById('contactPhone').value = apt.contactPhone || '';
+            document.getElementById('moveInDate').value = apt.moveInDate || '';
+            document.getElementById('listingUrl').value = apt.listingUrl || '';
+            document.getElementById('notes').value = apt.notes || '';
+            
+            // Set ratings
+            Object.entries(apt.ratings).forEach(([rating, value]) => {
+                const group = document.querySelector(`[data-rating="${rating}"]`);
+                if (group && value > 0) {
+                    group.setAttribute('data-value', value);
+                    const stars = group.querySelectorAll('.star');
+                    stars.forEach((star, index) => {
+                        if (index < value) {
+                            star.classList.add('active');
+                            star.style.color = '#ffd700';
+                        } else {
+                            star.classList.remove('active');
+                            star.style.color = '#ddd';
+                        }
+                    });
+                }
+            });
+            
+            // Display existing images
+            if (apt.images && apt.images.length > 0) {
+                const preview = document.getElementById('image-preview');
+                preview.innerHTML = '';
+                apt.images.forEach(img => {
+                    const imgEl = document.createElement('img');
+                    imgEl.src = img;
+                    preview.appendChild(imgEl);
+                });
+            }
+            
+            // Change button text
+            document.querySelector('#apartment-form button[type="submit"]').textContent = 'Update Apartment';
+            
+            // Scroll to top
+            window.scrollTo(0, 0);
+        }
+
+        // Filter apartments
+        function applyFilters() {
+            const cityFilter = document.getElementById('filter-city').value;
+            const maxPrice = parseInt(document.getElementById('filter-max-price').value) || Infinity;
+            const minRating = parseInt(document.getElementById('filter-min-rating').value) || 0;
+            const visitedFilter = document.getElementById('filter-visited').value;
+            const relevanceFilter = document.getElementById('filter-relevance').value;
+            
+            const apartmentArray = Object.entries(apartments).map(([id, data]) => ({
+                id,
+                ...data
+            }));
+            
+            const filtered = apartmentArray.filter(apt => {
+                const avgRating = Object.values(apt.ratings).reduce((a, b) => a + b, 0) / Object.keys(apt.ratings).length;
+                const cityMatch = !cityFilter || apt.city === cityFilter;
+                const priceMatch = apt.price <= maxPrice;
+                const ratingMatch = avgRating >= minRating;
+                let visitedMatch = true;
+                let relevanceMatch = true;
+                
+                if (visitedFilter === 'visited') {
+                    visitedMatch = apt.visited === true;
+                } else if (visitedFilter === 'not-visited') {
+                    visitedMatch = apt.visited !== true;
+                }
+                
+                if (relevanceFilter === 'relevant') {
+                    relevanceMatch = !apt.irrelevant;
+                } else if (relevanceFilter === 'irrelevant') {
+                    relevanceMatch = apt.irrelevant === true;
+                }
+                
+                return cityMatch && priceMatch && ratingMatch && visitedMatch && relevanceMatch;
+            });
+            
+            const list = document.getElementById('apartments-list');
+            list.innerHTML = '';
+            
+            if (filtered.length === 0) {
+                list.innerHTML = '<div class="loading">No apartments match your filters.</div>';
+                return;
+            }
+            
+            filtered.forEach(apt => {
+                const totalCost = apt.price + apt.arnona + apt.vaad;
+                const avgRating = Object.values(apt.ratings).reduce((a, b) => a + b, 0) / Object.keys(apt.ratings).length;
+                const missingFees = hasMissingFees(apt);
+                
+                const card = document.createElement('div');
+                card.className = `apartment-card ${apt.irrelevant ? 'irrelevant' : ''}`;
+                card.innerHTML = `
+                    ${apt.irrelevant ? '<div class="irrelevant-badge">Irrelevant</div>' : ''}
+                    ${apt.shortlisted ? '<div class="shortlist-badge">Shortlisted</div>' : ''}
+                    ${missingFees ? '<div class="missing-fees-indicator" data-tooltip="Missing Arnona or Building Committee fees">!</div>' : ''}
+                    <div class="apartment-header">
+                        <div>
+                            <div class="apartment-title">${apt.address}</div>
+                            <div style="color: #666; font-size: 14px;">${apt.city} ${apt.visited ? '✓ Visited' : '⏳ Not visited'}</div>
+                        </div>
+                        <div class="apartment-price">₪${apt.price}</div>
+                    </div>
+                    <div class="apartment-details">
+                        <div class="detail-item">Floor: ${apt.floor || 'N/A'}</div>
+                        <div class="detail-item">Size: ${apt.size || 'N/A'} m²</div>
+                        <div class="detail-item">${apt.elevator ? '✓ Elevator' : '✗ No Elevator'}</div>
+                        <div class="detail-item">${apt.parking ? '✓ Parking' : '✗ No Parking'}</div>
+                    </div>
+                    <div class="total-cost">Total Monthly: ₪${totalCost}</div>
+                    <div class="rating-summary">
+                        <div class="rating-item">
+                            <span>Average Rating</span>
+                            <span>${'★'.repeat(Math.round(avgRating))} (${avgRating.toFixed(1)})</span>
+                        </div>
+                    </div>
+                    ${apt.irrelevantReason ? `<div class="irrelevant-reason">Reason: ${apt.irrelevantReason}</div>` : ''}
+                    <div style="margin-top: 15px;">
+                        <button class="btn btn-secondary" onclick="viewDetails('${apt.id}')">View Details</button>
+                        ${apt.listingUrl ? `<button class="btn btn-success" onclick="window.open('${apt.listingUrl}', '_blank')">View Listing</button>` : ''}
+                        <button class="btn btn-primary" onclick="editApartment('${apt.id}')">Edit</button>
+                        <button class="btn btn-danger" onclick="deleteApartment('${apt.id}')">Delete</button>
+                        ${!apt.irrelevant ? `
+                            <button class="btn btn-warning btn-sm" onclick="toggleShortlist('${apt.id}')">${apt.shortlisted ? 'Remove from Shortlist' : 'Add to Shortlist'}</button>
+                            <button class="btn btn-danger btn-sm" onclick="markIrrelevant('${apt.id}')">Mark Irrelevant</button>
+                        ` : `
+                            <button class="btn btn-success btn-sm" onclick="markRelevant('${apt.id}')">Mark Relevant</button>
+                        `}
+                        <a href="${getGoogleMapsLink(apt.address, apt.city)}" target="_blank" class="google-maps-link">
+                            📍 Open in Google Maps
+                        </a>
+                    </div>
+                `;
+                list.appendChild(card);
+            });
+        }
+
+        // Export to CSV
+        function exportToCSV() {
+            const headers = [
+                'Address', 'City', 'Floor', 'Size (m²)', 'Divided', 'Parking Permit',
+                'Shelter', 'Elevator', 'Parking', 'Sun-heated Water', 'Price', 'Arnona', 'Vaad', 'Total Monthly',
+                'Broker', 'Visited', 'Contact Name', 'Contact Phone', 'Move-in Date', 'Listing URL',
+                'Condition Rating', 'Leisure Location Rating', 'Work Location Rating',
+                'Area Parking Rating', 'Noise Rating', 'Neighbors Rating', 'Privacy Rating',
+                'Average Rating', 'Notes', 'Irrelevant', 'Irrelevant Reason', 'Shortlisted', 'Shortlist Note'
+            ];
+            
+            const apartmentArray = Object.entries(apartments).map(([id, data]) => ({
+                id,
+                ...data
+            }));
+            
+            const rows = apartmentArray.map(apt => {
+                const totalCost = apt.price + apt.arnona + apt.vaad;
+                const avgRating = Object.values(apt.ratings).reduce((a, b) => a + b, 0) / Object.keys(apt.ratings).length;
+                
+                return [
+                    apt.address,
+                    apt.city,
+                    apt.floor || '',
+                    apt.size || '',
+                    apt.divided ? 'Yes' : 'No',
+                    apt.parkingPermit ? 'Yes' : 'No',
+                    apt.shelter ? 'Yes' : 'No',
+                    apt.elevator ? 'Yes' : 'No',
+                    apt.parking ? 'Yes' : 'No',
+                    apt.sunHeatedWater ? 'Yes' : 'No',
+                    apt.price,
+                    apt.arnona,
+                    apt.vaad,
+                    totalCost,
+                    apt.broker ? 'Yes' : 'No',
+                    apt.visited ? 'Yes' : 'No',
+                    apt.contactName || '',
+                    apt.contactPhone || '',
+                    apt.moveInDate || '',
+                    apt.listingUrl || '',
+                    apt.ratings.condition || 0,
+                    apt.ratings.leisureLocation || 0,
+                    apt.ratings.workLocation || 0,
+                    apt.ratings.areaParking || 0,
+                    apt.ratings.noise || 0,
+                    apt.ratings.neighbors || 0,
+                    apt.ratings.privacy || 0,
+                    avgRating.toFixed(1),
+                    apt.notes || '',
+                    apt.irrelevant ? 'Yes' : 'No',
+                    apt.irrelevantReason || '',
+                    apt.shortlisted ? 'Yes' : 'No',
+                    apt.shortlistNote || ''
+                ].map(val => `"${val}"`).join(',');
+            });
+            
+            const csv = [headers.join(','), ...rows].join('\n');
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'apartments_data.csv';
+            link.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // Load comparison checkboxes
+        function loadComparisonCheckboxes() {
+            const container = document.getElementById('comparison-checkboxes');
+            container.innerHTML = '';
+            
+            const apartmentArray = Object.entries(apartments)
+                .filter(([id, apt]) => !apt.irrelevant)
+                .map(([id, data]) => ({
+                    id,
+                    ...data
+                }));
+            
+            apartmentArray.forEach(apt => {
+                const div = document.createElement('div');
+                div.className = 'checkbox-group';
+                div.innerHTML = `
+                    <input type="checkbox" id="compare-${apt.id}" value="${apt.id}">
+                    <label for="compare-${apt.id}">${apt.address}, ${apt.city} - ₪${apt.price}</label>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        // Generate comparison table
+        function generateComparison() {
+            const selected = Array.from(document.querySelectorAll('#comparison-checkboxes input:checked'))
+                .map(cb => cb.value);
+            
+            if (selected.length < 2) {
+                alert('Please select at least 2 apartments to compare');
+                return;
+            }
+            
+            const selectedApts = selected.map(id => ({
+                id,
+                ...apartments[id]
+            }));
+            
+            const result = document.getElementById('comparison-result');
+            
+            result.innerHTML = `
+                <div class="comparison-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th onclick="sortTable('address')">Address <span class="sort-indicator">${getSortIndicator('address')}</span></th>
+                                <th onclick="sortTable('city')">City <span class="sort-indicator">${getSortIndicator('city')}</span></th>
+                                <th onclick="sortTable('price')">Price <span class="sort-indicator">${getSortIndicator('price')}</span></th>
+                                <th onclick="sortTable('total')">Total Monthly <span class="sort-indicator">${getSortIndicator('total')}</span></th>
+                                <th onclick="sortTable('size')">Size (m²) <span class="sort-indicator">${getSortIndicator('size')}</span></th>
+                                <th onclick="sortTable('avgRating')">Avg Rating <span class="sort-indicator">${getSortIndicator('avgRating')}</span></th>
+                                <th onclick="sortTable('moveInDate')">Move-in <span class="sort-indicator">${getSortIndicator('moveInDate')}</span></th>
+                                <th>Visited</th>
+                                <th>Elevator</th>
+                                <th>Parking</th>
+                                <th>Sun Water</th>
+                                <th>Condition</th>
+                                <th>Leisure</th>
+                                <th>Work</th>
+                                <th>Privacy</th>
+                            </tr>
+                        </thead>
+                        <tbody id="comparison-tbody">
+                            ${generateComparisonRows(selectedApts)}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        // Generate comparison rows
+        function generateComparisonRows(apts) {
+            return apts.map(apt => {
+                const totalCost = apt.price + apt.arnona + apt.vaad;
+                const avgRating = Object.values(apt.ratings).reduce((a, b) => a + b, 0) / Object.keys(apt.ratings).length;
+                
+                return `
+                    <tr>
+                        <td>${apt.address}</td>
+                        <td>${apt.city}</td>
+                        <td>₪${apt.price}</td>
+                        <td>₪${totalCost}</td>
+                        <td>${apt.size || 'N/A'}</td>
+                        <td>${'★'.repeat(Math.round(avgRating))} (${avgRating.toFixed(1)})</td>
+                        <td>${apt.moveInDate ? new Date(apt.moveInDate).toLocaleDateString('en-GB') : 'N/A'}</td>
+                        <td>${apt.visited ? '✓' : '⏳'}</td>
+                        <td>${apt.elevator ? '✓' : '✗'}</td>
+                        <td>${apt.parking ? '✓' : '✗'}</td>
+                        <td>${apt.sunHeatedWater ? '✓' : '✗'}</td>
+                        <td>${'★'.repeat(apt.ratings.condition || 0)}</td>
+                        <td>${'★'.repeat(apt.ratings.leisureLocation || 0)}</td>
+                        <td>${'★'.repeat(apt.ratings.workLocation || 0)}</td>
+                        <td>${'★'.repeat(apt.ratings.privacy || 0)}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // Sort table
+        function sortTable(column) {
+            const selected = Array.from(document.querySelectorAll('#comparison-checkboxes input:checked'))
+                .map(cb => cb.value);
+            
+            let selectedApts = selected.map(id => ({
+                id,
+                ...apartments[id]
+            }));
+            
+            if (sortColumn === column) {
+                sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+            } else {
+                sortColumn = column;
+                sortDirection = 'asc';
+            }
+            
+            selectedApts.sort((a, b) => {
+                let aVal, bVal;
+                
+                switch(column) {
+                    case 'address':
+                        aVal = a.address.toLowerCase();
+                        bVal = b.address.toLowerCase();
+                        break;
+                    case 'city':
+                        aVal = a.city.toLowerCase();
+                        bVal = b.city.toLowerCase();
+                        break;
+                    case 'price':
+                        aVal = a.price;
+                        bVal = b.price;
+                        break;
+                    case 'total':
+                        aVal = a.price + a.arnona + a.vaad;
+                        bVal = b.price + b.arnona + b.vaad;
+                        break;
+                    case 'size':
+                        aVal = parseInt(a.size) || 0;
+                        bVal = parseInt(b.size) || 0;
+                        break;
+                    case 'avgRating':
+                        aVal = Object.values(a.ratings).reduce((x, y) => x + y, 0) / Object.keys(a.ratings).length;
+                        bVal = Object.values(b.ratings).reduce((x, y) => x + y, 0) / Object.keys(b.ratings).length;
+                        break;
+                    case 'moveInDate':
+                        aVal = a.moveInDate ? new Date(a.moveInDate).getTime() : 0;
+                        bVal = b.moveInDate ? new Date(b.moveInDate).getTime() : 0;
+                        break;
+                }
+                
+                if (sortDirection === 'asc') {
+                    return aVal > bVal ? 1 : -1;
+                } else {
+                    return aVal < bVal ? 1 : -1;
+                }
+            });
+            
+            document.getElementById('comparison-tbody').innerHTML = generateComparisonRows(selectedApts);
+            
+            // Update sort indicators
+            document.querySelectorAll('.sort-indicator').forEach(indicator => {
+                indicator.textContent = '';
+            });
+            event.target.querySelector('.sort-indicator').textContent = sortDirection === 'asc' ? '↑' : '↓';
+        }
+
+        // Get sort indicator
+        function getSortIndicator(column) {
+            if (sortColumn === column) {
+                return sortDirection === 'asc' ? '↑' : '↓';
+            }
+            return '';
+        }
+
+        // ========================================
+        // Map Functions
+        // ========================================
+
+        // Generate Google Maps link
+        function getGoogleMapsLink(address, city) {
+            const query = encodeURIComponent(`${address}, ${city}, Israel`);
+            return `https://www.google.com/maps/search/?api=1&query=${query}`;
+        }
+
+        // Initialize Leaflet map
+        function initializeMap() {
+            // Only initialize once
+            if (!map) {
+                // Center map on Tel Aviv
+                map = L.map('map').setView([32.0853, 34.7818], 12);
+                
+                // Add OpenStreetMap tiles
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '© OpenStreetMap contributors'
+                }).addTo(map);
+            }
+            
+            // Load apartment markers
+            setTimeout(() => {
+                map.invalidateSize();
+                updateMapMarkers();
+            }, 100);
+        }
+
+        // Get marker color based on price
+        function getMarkerColor(price) {
+            if (price >= 4500 && price <= 5500) return '#28a745';
+            if (price > 5500 && price <= 6500) return '#ffa500';
+            if (price > 6500) return '#dc3545';
+            return '#667eea'; // Default color for prices below 4500
+        }
+
+        // Geocode address using Nominatim (OpenStreetMap)
+        async function geocodeAddress(address, city) {
+            const fullAddress = `${address}, ${city}, Israel`;
+            
+            // Check cache first
+            if (geocodeCache[fullAddress]) {
+                return geocodeCache[fullAddress];
+            }
+            
+            try {
+                const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(fullAddress)}&limit=1`;
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                if (data && data.length > 0) {
+                    const result = {
+                        lat: parseFloat(data[0].lat),
+                        lng: parseFloat(data[0].lon)
+                    };
+                    geocodeCache[fullAddress] = result;
+                    return result;
+                }
+            } catch (error) {
+                console.error('Geocoding error:', error);
+            }
+            
+            // Fallback to approximate Tel Aviv coordinates with random offset
+            const fallback = {
+                lat: 32.0853 + (Math.random() - 0.5) * 0.1,
+                lng: 34.7818 + (Math.random() - 0.5) * 0.1
+            };
+            geocodeCache[fullAddress] = fallback;
+            return fallback;
+        }
+
+        // Update map markers
+        async function updateMapMarkers() {
+            if (!map) return;
+            
+            // Clear existing markers
+            markers.forEach(marker => map.removeLayer(marker));
+            markers = [];
+            
+            // Get filter states
+            const cityFilter = document.getElementById('map-filter-city').value;
+            const visitedOnly = document.getElementById('map-filter-visited').checked;
+            const parkingOnly = document.getElementById('map-filter-parking').checked;
+            const elevatorOnly = document.getElementById('map-filter-elevator').checked;
+            const relevantOnly = document.getElementById('map-filter-relevant').checked;
+            
+            const apartmentArray = Object.entries(apartments).map(([id, data]) => ({
+                id,
+                ...data
+            }));
+            
+            // Filter apartments
+            const filtered = apartmentArray.filter(apt => {
+                if (cityFilter && apt.city !== cityFilter) return false;
+                if (visitedOnly && !apt.visited) return false;
+                if (parkingOnly && !apt.parking) return false;
+                if (elevatorOnly && !apt.elevator) return false;
+                if (relevantOnly && apt.irrelevant) return false;
+                return true;
+            });
+            
+            // Add markers for each apartment
+            let totalPrice = 0;
+            let count = 0;
+            
+            for (const apt of filtered) {
+                const coords = await geocodeAddress(apt.address, apt.city);
+                if (coords) {
+                    const color = getMarkerColor(apt.price);
+                    const avgRating = Object.values(apt.ratings).reduce((a, b) => a + b, 0) / Object.keys(apt.ratings).length;
+                    const missingFees = hasMissingFees(apt);
+                    
+                    // Create custom icon
+                    const icon = L.divIcon({
+                        className: 'custom-marker',
+                        html: `<div style="background-color: ${color}; color: white; padding: 8px 12px; border-radius: 20px; font-weight: bold; white-space: nowrap; box-shadow: 0 2px 6px rgba(0,0,0,0.3);">₪${apt.price.toLocaleString()}</div>`,
+                        iconSize: null
+                    });
+                    
+                    // Create marker
+                    const marker = L.marker([coords.lat, coords.lng], { icon })
+                        .addTo(map)
+                        .bindPopup(`
+                            <div class="popup-content">
+                                <div class="popup-title">${apt.address}</div>
+                                <div class="popup-detail">${apt.city}</div>
+                                <div class="popup-detail">Floor: ${apt.floor || 'N/A'} • ${apt.size || 'N/A'} m²</div>
+                                <div class="popup-detail">
+                                    ${apt.elevator ? '✓ Elevator' : '✗ No Elevator'} • 
+                                    ${apt.parking ? '✓ Parking' : '✗ No Parking'}
+                                </div>
+                                ${missingFees ? '<div class="popup-missing-fees">! Missing Arnona or Building Committee fees</div>' : ''}
+                                ${apt.irrelevant ? '<div class="popup-detail" style="color: #dc3545; font-weight: bold;">Marked as Irrelevant</div>' : ''}
+                                ${apt.shortlisted ? '<div class="popup-detail" style="color: #ffc107; font-weight: bold;">Shortlisted</div>' : ''}
+                                <div class="popup-price">₪${apt.price.toLocaleString()}/month</div>
+                                <div class="popup-rating">${'★'.repeat(Math.round(avgRating))} (${avgRating.toFixed(1)})</div>
+                                <div class="popup-buttons">
+                                    <button class="btn btn-secondary" onclick="viewDetails('${apt.id}')">Details</button>
+                                    ${!apt.irrelevant ? `<button class="btn btn-warning btn-sm" onclick="toggleShortlist('${apt.id}')">${apt.shortlisted ? 'Unlist' : 'Shortlist'}</button>` : ''}
+                                    <button class="btn btn-primary" onclick="window.open('${getGoogleMapsLink(apt.address, apt.city)}', '_blank')">Google Maps</button>
+                                </div>
+                            </div>
+                        `);
+                    
+                    markers.push(marker);
+                    totalPrice += apt.price;
+                    count++;
+                }
+            }
+            
+            // Update statistics
+            document.getElementById('map-count').textContent = `${count} of ${apartmentArray.length}`;
+            document.getElementById('map-avg-price').textContent = count > 0 ? `₪${Math.round(totalPrice / count).toLocaleString()}` : '₪0';
+            
+            // Fit map to show all markers
+            if (markers.length > 0) {
+                const group = L.featureGroup(markers);
+                map.fitBounds(group.getBounds().pad(0.1));
+            }
+        }
     </script>
 </body>
-</html>
+</html>clearRating('condition')">Clear</button>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Location for Leisure</label>
+                            <div class="rating-group" data-rating="leisureLocation">
+                                <span class="star" data-value="1">★</span>
+                                <span class="star" data-value="2">★</span>
+                                <span class="star" data-value="3">★</span>
+                                <span class="star" data-value="4">★</span>
+                                <span class="star" data-value="5">★</span>
+                                <button type="button" class="clear-rating" onclick="clearRating('leisureLocation')">Clear</button>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Location for Work</label>
+                            <div class="rating-group" data-rating="workLocation">
+                                <span class="star" data-value="1">★</span>
+                                <span class="star" data-value="2">★</span>
+                                <span class="star" data-value="3">★</span>
+                                <span class="star" data-value="4">★</span>
+                                <span class="star" data-value="5">★</span>
+                                <button type="button" class="clear-rating" onclick="
