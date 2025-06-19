@@ -917,6 +917,30 @@
                                 <span class="star" data-value="3">★</span>
                                 <span class="star" data-value="4">★</span>
                                 <span class="star" data-value="5">★</span>
+                                <button type="button" class="clear-rating" onclick="clearRating('condition')">Clear</button>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Location for Leisure</label>
+                            <div class="rating-group" data-rating="leisureLocation">
+                                <span class="star" data-value="1">★</span>
+                                <span class="star" data-value="2">★</span>
+                                <span class="star" data-value="3">★</span>
+                                <span class="star" data-value="4">★</span>
+                                <span class="star" data-value="5">★</span>
+                                <button type="button" class="clear-rating" onclick="clearRating('leisureLocation')">Clear</button>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Location for Work</label>
+                            <div class="rating-group" data-rating="workLocation">
+                                <span class="star" data-value="1">★</span>
+                                <span class="star" data-value="2">★</span>
+                                <span class="star" data-value="3">★</span>
+                                <span class="star" data-value="4">★</span>
+                                <span class="star" data-value="5">★</span>
                                 <button type="button" class="clear-rating" onclick="clearRating('workLocation')">Clear</button>
                             </div>
                         </div>
@@ -1344,11 +1368,29 @@
             
             // Find the correct tab button
             const tabButtons = document.querySelectorAll('.tab');
-            tabButtons.forEach(btn => {
-                if (btn.textContent.toLowerCase().includes(tab)) {
-                    btn.classList.add('active');
-                }
-            });
+            let tabIndex = -1;
+            
+            switch(tab) {
+                case 'add':
+                    tabIndex = 0;
+                    break;
+                case 'list':
+                    tabIndex = 1;
+                    break;
+                case 'shortlist':
+                    tabIndex = 2;
+                    break;
+                case 'compare':
+                    tabIndex = 3;
+                    break;
+                case 'map':
+                    tabIndex = 4;
+                    break;
+            }
+            
+            if (tabIndex >= 0 && tabButtons[tabIndex]) {
+                tabButtons[tabIndex].classList.add('active');
+            }
             
             document.getElementById(`${tab}-tab`).classList.add('active');
             
@@ -2202,300 +2244,3 @@
                         <tbody id="comparison-tbody">
                             ${generateComparisonRows(selectedApts)}
                         </tbody>
-                    </table>
-                </div>
-            `;
-        }
-
-        // Generate comparison rows
-        function generateComparisonRows(apts) {
-            return apts.map(apt => {
-                const totalCost = apt.price + apt.arnona + apt.vaad;
-                const avgRating = Object.values(apt.ratings).reduce((a, b) => a + b, 0) / Object.keys(apt.ratings).length;
-                
-                return `
-                    <tr>
-                        <td>${apt.address}</td>
-                        <td>${apt.city}</td>
-                        <td>₪${apt.price}</td>
-                        <td>₪${totalCost}</td>
-                        <td>${apt.size || 'N/A'}</td>
-                        <td>${'★'.repeat(Math.round(avgRating))} (${avgRating.toFixed(1)})</td>
-                        <td>${apt.moveInDate ? new Date(apt.moveInDate).toLocaleDateString('en-GB') : 'N/A'}</td>
-                        <td>${apt.visited ? '✓' : '⏳'}</td>
-                        <td>${apt.elevator ? '✓' : '✗'}</td>
-                        <td>${apt.parking ? '✓' : '✗'}</td>
-                        <td>${apt.sunHeatedWater ? '✓' : '✗'}</td>
-                        <td>${'★'.repeat(apt.ratings.condition || 0)}</td>
-                        <td>${'★'.repeat(apt.ratings.leisureLocation || 0)}</td>
-                        <td>${'★'.repeat(apt.ratings.workLocation || 0)}</td>
-                        <td>${'★'.repeat(apt.ratings.privacy || 0)}</td>
-                    </tr>
-                `;
-            }).join('');
-        }
-
-        // Sort table
-        function sortTable(column) {
-            const selected = Array.from(document.querySelectorAll('#comparison-checkboxes input:checked'))
-                .map(cb => cb.value);
-            
-            let selectedApts = selected.map(id => ({
-                id,
-                ...apartments[id]
-            }));
-            
-            if (sortColumn === column) {
-                sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
-            } else {
-                sortColumn = column;
-                sortDirection = 'asc';
-            }
-            
-            selectedApts.sort((a, b) => {
-                let aVal, bVal;
-                
-                switch(column) {
-                    case 'address':
-                        aVal = a.address.toLowerCase();
-                        bVal = b.address.toLowerCase();
-                        break;
-                    case 'city':
-                        aVal = a.city.toLowerCase();
-                        bVal = b.city.toLowerCase();
-                        break;
-                    case 'price':
-                        aVal = a.price;
-                        bVal = b.price;
-                        break;
-                    case 'total':
-                        aVal = a.price + a.arnona + a.vaad;
-                        bVal = b.price + b.arnona + b.vaad;
-                        break;
-                    case 'size':
-                        aVal = parseInt(a.size) || 0;
-                        bVal = parseInt(b.size) || 0;
-                        break;
-                    case 'avgRating':
-                        aVal = Object.values(a.ratings).reduce((x, y) => x + y, 0) / Object.keys(a.ratings).length;
-                        bVal = Object.values(b.ratings).reduce((x, y) => x + y, 0) / Object.keys(b.ratings).length;
-                        break;
-                    case 'moveInDate':
-                        aVal = a.moveInDate ? new Date(a.moveInDate).getTime() : 0;
-                        bVal = b.moveInDate ? new Date(b.moveInDate).getTime() : 0;
-                        break;
-                }
-                
-                if (sortDirection === 'asc') {
-                    return aVal > bVal ? 1 : -1;
-                } else {
-                    return aVal < bVal ? 1 : -1;
-                }
-            });
-            
-            document.getElementById('comparison-tbody').innerHTML = generateComparisonRows(selectedApts);
-            
-            // Update sort indicators
-            document.querySelectorAll('.sort-indicator').forEach(indicator => {
-                indicator.textContent = '';
-            });
-            event.target.querySelector('.sort-indicator').textContent = sortDirection === 'asc' ? '↑' : '↓';
-        }
-
-        // Get sort indicator
-        function getSortIndicator(column) {
-            if (sortColumn === column) {
-                return sortDirection === 'asc' ? '↑' : '↓';
-            }
-            return '';
-        }
-
-        // ========================================
-        // Map Functions
-        // ========================================
-
-        // Generate Google Maps link
-        function getGoogleMapsLink(address, city) {
-            const query = encodeURIComponent(`${address}, ${city}, Israel`);
-            return `https://www.google.com/maps/search/?api=1&query=${query}`;
-        }
-
-        // Initialize Leaflet map
-        function initializeMap() {
-            // Only initialize once
-            if (!map) {
-                // Center map on Tel Aviv
-                map = L.map('map').setView([32.0853, 34.7818], 12);
-                
-                // Add OpenStreetMap tiles
-                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                    attribution: '© OpenStreetMap contributors'
-                }).addTo(map);
-            }
-            
-            // Load apartment markers
-            setTimeout(() => {
-                map.invalidateSize();
-                updateMapMarkers();
-            }, 100);
-        }
-
-        // Get marker color based on price
-        function getMarkerColor(price) {
-            if (price >= 4500 && price <= 5500) return '#28a745';
-            if (price > 5500 && price <= 6500) return '#ffa500';
-            if (price > 6500) return '#dc3545';
-            return '#667eea'; // Default color for prices below 4500
-        }
-
-        // Geocode address using Nominatim (OpenStreetMap)
-        async function geocodeAddress(address, city) {
-            const fullAddress = `${address}, ${city}, Israel`;
-            
-            // Check cache first
-            if (geocodeCache[fullAddress]) {
-                return geocodeCache[fullAddress];
-            }
-            
-            try {
-                const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(fullAddress)}&limit=1`;
-                const response = await fetch(url);
-                const data = await response.json();
-                
-                if (data && data.length > 0) {
-                    const result = {
-                        lat: parseFloat(data[0].lat),
-                        lng: parseFloat(data[0].lon)
-                    };
-                    geocodeCache[fullAddress] = result;
-                    return result;
-                }
-            } catch (error) {
-                console.error('Geocoding error:', error);
-            }
-            
-            // Fallback to approximate Tel Aviv coordinates with random offset
-            const fallback = {
-                lat: 32.0853 + (Math.random() - 0.5) * 0.1,
-                lng: 34.7818 + (Math.random() - 0.5) * 0.1
-            };
-            geocodeCache[fullAddress] = fallback;
-            return fallback;
-        }
-
-        // Update map markers
-        async function updateMapMarkers() {
-            if (!map) return;
-            
-            // Clear existing markers
-            markers.forEach(marker => map.removeLayer(marker));
-            markers = [];
-            
-            // Get filter states
-            const cityFilter = document.getElementById('map-filter-city').value;
-            const visitedOnly = document.getElementById('map-filter-visited').checked;
-            const parkingOnly = document.getElementById('map-filter-parking').checked;
-            const elevatorOnly = document.getElementById('map-filter-elevator').checked;
-            const relevantOnly = document.getElementById('map-filter-relevant').checked;
-            
-            const apartmentArray = Object.entries(apartments).map(([id, data]) => ({
-                id,
-                ...data
-            }));
-            
-            // Filter apartments
-            const filtered = apartmentArray.filter(apt => {
-                if (cityFilter && apt.city !== cityFilter) return false;
-                if (visitedOnly && !apt.visited) return false;
-                if (parkingOnly && !apt.parking) return false;
-                if (elevatorOnly && !apt.elevator) return false;
-                if (relevantOnly && apt.irrelevant) return false;
-                return true;
-            });
-            
-            // Add markers for each apartment
-            let totalPrice = 0;
-            let count = 0;
-            
-            for (const apt of filtered) {
-                const coords = await geocodeAddress(apt.address, apt.city);
-                if (coords) {
-                    const color = getMarkerColor(apt.price);
-                    const avgRating = Object.values(apt.ratings).reduce((a, b) => a + b, 0) / Object.keys(apt.ratings).length;
-                    const missingFees = hasMissingFees(apt);
-                    
-                    // Create custom icon
-                    const icon = L.divIcon({
-                        className: 'custom-marker',
-                        html: `<div style="background-color: ${color}; color: white; padding: 8px 12px; border-radius: 20px; font-weight: bold; white-space: nowrap; box-shadow: 0 2px 6px rgba(0,0,0,0.3);">₪${apt.price.toLocaleString()}</div>`,
-                        iconSize: null
-                    });
-                    
-                    // Create marker
-                    const marker = L.marker([coords.lat, coords.lng], { icon })
-                        .addTo(map)
-                        .bindPopup(`
-                            <div class="popup-content">
-                                <div class="popup-title">${apt.address}</div>
-                                <div class="popup-detail">${apt.city}</div>
-                                <div class="popup-detail">Floor: ${apt.floor || 'N/A'} • ${apt.size || 'N/A'} m²</div>
-                                <div class="popup-detail">
-                                    ${apt.elevator ? '✓ Elevator' : '✗ No Elevator'} • 
-                                    ${apt.parking ? '✓ Parking' : '✗ No Parking'}
-                                </div>
-                                ${missingFees ? '<div class="popup-missing-fees">! Missing Arnona or Building Committee fees</div>' : ''}
-                                ${apt.irrelevant ? '<div class="popup-detail" style="color: #dc3545; font-weight: bold;">Marked as Irrelevant</div>' : ''}
-                                ${apt.shortlisted ? '<div class="popup-detail" style="color: #ffc107; font-weight: bold;">Shortlisted</div>' : ''}
-                                <div class="popup-price">₪${apt.price.toLocaleString()}/month</div>
-                                <div class="popup-rating">${'★'.repeat(Math.round(avgRating))} (${avgRating.toFixed(1)})</div>
-                                <div class="popup-buttons">
-                                    <button class="btn btn-secondary" onclick="viewDetails('${apt.id}')">Details</button>
-                                    ${!apt.irrelevant ? `<button class="btn btn-warning btn-sm" onclick="toggleShortlist('${apt.id}')">${apt.shortlisted ? 'Unlist' : 'Shortlist'}</button>` : ''}
-                                    <button class="btn btn-primary" onclick="window.open('${getGoogleMapsLink(apt.address, apt.city)}', '_blank')">Google Maps</button>
-                                </div>
-                            </div>
-                        `);
-                    
-                    markers.push(marker);
-                    totalPrice += apt.price;
-                    count++;
-                }
-            }
-            
-            // Update statistics
-            document.getElementById('map-count').textContent = `${count} of ${apartmentArray.length}`;
-            document.getElementById('map-avg-price').textContent = count > 0 ? `₪${Math.round(totalPrice / count).toLocaleString()}` : '₪0';
-            
-            // Fit map to show all markers
-            if (markers.length > 0) {
-                const group = L.featureGroup(markers);
-                map.fitBounds(group.getBounds().pad(0.1));
-            }
-        }
-    </script>
-</body>
-</html>clearRating('condition')">Clear</button>
-                            </div>
-                        </div>
-
-                        <div class="form-group">
-                            <label>Location for Leisure</label>
-                            <div class="rating-group" data-rating="leisureLocation">
-                                <span class="star" data-value="1">★</span>
-                                <span class="star" data-value="2">★</span>
-                                <span class="star" data-value="3">★</span>
-                                <span class="star" data-value="4">★</span>
-                                <span class="star" data-value="5">★</span>
-                                <button type="button" class="clear-rating" onclick="clearRating('leisureLocation')">Clear</button>
-                            </div>
-                        </div>
-
-                        <div class="form-group">
-                            <label>Location for Work</label>
-                            <div class="rating-group" data-rating="workLocation">
-                                <span class="star" data-value="1">★</span>
-                                <span class="star" data-value="2">★</span>
-                                <span class="star" data-value="3">★</span>
-                                <span class="star" data-value="4">★</span>
-                                <span class="star" data-value="5">★</span>
-                                <button type="button" class="clear-rating" onclick="
