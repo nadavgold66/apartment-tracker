@@ -131,7 +131,6 @@
             padding: 10px;
             border-radius: 12px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-            flex-wrap: wrap;
         }
 
         .tab {
@@ -263,11 +262,6 @@
             color: white;
         }
 
-        .btn-warning {
-            background: #ffc107;
-            color: #212529;
-        }
-
         .btn-link {
             background: none;
             color: #667eea;
@@ -299,24 +293,6 @@
             padding: 20px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.05);
             transition: transform 0.3s ease;
-            position: relative;
-        }
-
-        .apartment-card.irrelevant {
-            opacity: 0.7;
-            border: 2px solid #dc3545;
-        }
-
-        .irrelevant-badge {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            background: #dc3545;
-            color: white;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 12px;
-            font-weight: bold;
         }
 
         .apartment-card:hover {
@@ -479,79 +455,6 @@
             height: 32px;
             border-radius: 50%;
             margin-right: 10px;
-        }
-
-        .visit-notes-section {
-            background: #f0f4f8;
-            padding: 15px;
-            border-radius: 8px;
-            margin-top: 20px;
-        }
-
-        .shortlist-item {
-            background: white;
-            border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 15px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-            border-left: 5px solid #667eea;
-        }
-
-        .shortlist-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-
-        .shortlist-sort {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-        }
-
-        .shortlist-details {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin-top: 15px;
-        }
-
-        .shortlist-detail-item {
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
-        }
-
-        .shortlist-detail-label {
-            font-size: 12px;
-            color: #666;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .shortlist-detail-value {
-            font-size: 16px;
-            font-weight: 500;
-            color: #2c3e50;
-        }
-
-        .shortlist-notes {
-            background: #f8f9fa;
-            padding: 12px;
-            border-radius: 6px;
-            margin-top: 15px;
-            font-style: italic;
-            color: #666;
-        }
-
-        .shortlist-badge {
-            background: #667eea;
-            color: white;
-            padding: 2px 8px;
-            border-radius: 4px;
-            font-size: 12px;
-            margin-left: 8px;
         }
 
         @media (max-width: 768px) {
@@ -722,7 +625,6 @@
                 <button class="tab" onclick="switchTab('list')">View Apartments</button>
                 <button class="tab" onclick="switchTab('compare')">Compare</button>
                 <button class="tab" onclick="switchTab('map')">Map View</button>
-                <button class="tab" onclick="switchTab('shortlist')">Shortlist <span id="shortlist-count" class="shortlist-badge" style="display: none;">0</span></button>
             </div>
 
             <!-- Add Apartment Tab -->
@@ -798,16 +700,6 @@
                         <div class="form-group checkbox-group">
                             <input type="checkbox" id="visited">
                             <label for="visited">Visited Apartment</label>
-                        </div>
-
-                        <div class="form-group checkbox-group">
-                            <input type="checkbox" id="irrelevant">
-                            <label for="irrelevant">Mark as Irrelevant</label>
-                        </div>
-
-                        <div class="form-group checkbox-group">
-                            <input type="checkbox" id="shortlisted">
-                            <label for="shortlisted">Add to Shortlist</label>
                         </div>
 
                         <div class="form-group">
@@ -910,21 +802,8 @@
                         </div>
 
                         <div class="form-group">
-                            <label for="notes">General Notes</label>
+                            <label for="notes">Notes</label>
                             <textarea id="notes" rows="4"></textarea>
-                        </div>
-
-                        <div class="visit-notes-section">
-                            <h4>Visit/Contact Notes</h4>
-                            <div class="form-group">
-                                <label for="visitNotes">Notes from visiting or contacting the owner</label>
-                                <textarea id="visitNotes" rows="3" placeholder="Add notes after visiting the apartment or talking with the owner..."></textarea>
-                            </div>
-                        </div>
-
-                        <div class="form-group" id="shortlist-notes-group" style="display: none;">
-                            <label for="shortlistNotes">Shortlist Notes</label>
-                            <textarea id="shortlistNotes" rows="2" placeholder="Why is this apartment on your shortlist?"></textarea>
                         </div>
 
                         <div class="image-upload-section">
@@ -945,9 +824,7 @@
                     <div class="filter-grid">
                         <div class="form-group">
                             <label for="filter-city">City</label>
-                            <select id="filter-city">
-                                <option value="">All Cities</option>
-                            </select>
+                            <input type="text" id="filter-city" placeholder="Filter by city">
                         </div>
                         <div class="form-group">
                             <label for="filter-max-price">Max Price</label>
@@ -971,212 +848,8 @@
                             </select>
                         </div>
                         <div class="form-group">
-                            <label for="filter-relevance">Relevance</label>
-                            <select id="filter-relevance">
-                                <option value="">All</option>
-                                <option value="relevant">Relevant Only</option>
-                                <option value="irrelevant">Irrelevant Only</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
                             <label>&nbsp;</label>
-                            <button class="btn btn-primary" onclick="editApartment('${apt.id}')">Edit</button>
-                            <button class="btn btn-secondary" onclick="viewDetails('${apt.id}')">View Details</button>
-                            <button class="btn btn-warning" onclick="removeFromShortlist('${apt.id}')">Remove from Shortlist</button>
-                            <a href="${getGoogleMapsLink(apt.address, apt.city)}" target="_blank" class="google-maps-link">
-                                📍 Open in Google Maps
-                            </a>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-        }
-
-        // Remove from shortlist
-        async function removeFromShortlist(id) {
-            const apt = apartments[id];
-            if (!apt) return;
-            
-            if (confirm('Remove this apartment from your shortlist?')) {
-                apt.shortlisted = false;
-                apt.shortlistNotes = '';
-                apt.updatedAt = Date.now();
-                
-                try {
-                    await saveApartmentToFirebase(apt, id);
-                    showMessage('success', 'Removed from shortlist!');
-                    loadShortlist();
-                } catch (error) {
-                    showMessage('error', 'Failed to update: ' + error.message);
-                }
-            }
-        }
-
-        // ========================================
-        // Map Functions
-        // ========================================
-
-        // Generate Google Maps link
-        function getGoogleMapsLink(address, city) {
-            const query = encodeURIComponent(`${address}, ${city}, Israel`);
-            return `https://www.google.com/maps/search/?api=1&query=${query}`;
-        }
-
-        // Initialize Leaflet map
-        function initializeMap() {
-            // Only initialize once
-            if (!map) {
-                // Center map on Tel Aviv
-                map = L.map('map').setView([32.0853, 34.7818], 12);
-                
-                // Add OpenStreetMap tiles
-                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                    attribution: '© OpenStreetMap contributors'
-                }).addTo(map);
-            }
-            
-            // Load apartment markers
-            setTimeout(() => {
-                map.invalidateSize();
-                updateMapMarkers();
-            }, 100);
-        }
-
-        // Get marker color based on price
-        function getMarkerColor(price) {
-            if (price < 4000) return '#28a745';
-            if (price < 5000) return '#667eea';
-            if (price < 6000) return '#fbbf24';
-            return '#dc3545';
-        }
-
-        // Geocode address using Nominatim (OpenStreetMap)
-        async function geocodeAddress(address, city) {
-            const fullAddress = `${address}, ${city}, Israel`;
-            
-            // Check cache first
-            if (geocodeCache[fullAddress]) {
-                return geocodeCache[fullAddress];
-            }
-            
-            try {
-                const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(fullAddress)}&limit=1`;
-                const response = await fetch(url);
-                const data = await response.json();
-                
-                if (data && data.length > 0) {
-                    const result = {
-                        lat: parseFloat(data[0].lat),
-                        lng: parseFloat(data[0].lon)
-                    };
-                    geocodeCache[fullAddress] = result;
-                    return result;
-                }
-            } catch (error) {
-                console.error('Geocoding error:', error);
-            }
-            
-            // Fallback to approximate Tel Aviv coordinates with random offset
-            const fallback = {
-                lat: 32.0853 + (Math.random() - 0.5) * 0.1,
-                lng: 34.7818 + (Math.random() - 0.5) * 0.1
-            };
-            geocodeCache[fullAddress] = fallback;
-            return fallback;
-        }
-
-        // Update map markers
-        async function updateMapMarkers() {
-            if (!map) return;
-            
-            // Clear existing markers
-            markers.forEach(marker => map.removeLayer(marker));
-            markers = [];
-            
-            // Get filter states
-            const cityFilter = document.getElementById('map-filter-city').value;
-            const visitedOnly = document.getElementById('map-filter-visited').checked;
-            const hideIrrelevant = document.getElementById('map-filter-relevant').checked;
-            const parkingOnly = document.getElementById('map-filter-parking').checked;
-            const elevatorOnly = document.getElementById('map-filter-elevator').checked;
-            
-            const apartmentArray = Object.entries(apartments).map(([id, data]) => ({
-                id,
-                ...data
-            }));
-            
-            // Filter apartments
-            const filtered = apartmentArray.filter(apt => {
-                if (cityFilter && apt.city !== cityFilter) return false;
-                if (visitedOnly && !apt.visited) return false;
-                if (hideIrrelevant && apt.irrelevant) return false;
-                if (parkingOnly && !apt.parking) return false;
-                if (elevatorOnly && !apt.elevator) return false;
-                return true;
-            });
-            
-            // Add markers for each apartment
-            let totalPrice = 0;
-            let count = 0;
-            
-            for (const apt of filtered) {
-                const coords = await geocodeAddress(apt.address, apt.city);
-                if (coords) {
-                    const color = getMarkerColor(apt.price);
-                    const avgRating = Object.values(apt.ratings).reduce((a, b) => a + b, 0) / Object.keys(apt.ratings).length;
-                    
-                    // Create custom icon
-                    const icon = L.divIcon({
-                        className: 'custom-marker',
-                        html: `<div style="background-color: ${color}; color: white; padding: 8px 12px; border-radius: 20px; font-weight: bold; white-space: nowrap; box-shadow: 0 2px 6px rgba(0,0,0,0.3);">₪${apt.price.toLocaleString()}</div>`,
-                        iconSize: null
-                    });
-                    
-                    // Create marker
-                    const marker = L.marker([coords.lat, coords.lng], { icon })
-                        .addTo(map)
-                        .bindPopup(`
-                            <div class="popup-content">
-                                <div class="popup-title">${apt.address}</div>
-                                <div class="popup-detail">${apt.city}</div>
-                                <div class="popup-detail">Floor: ${apt.floor || 'N/A'} • ${apt.size || 'N/A'} m²</div>
-                                <div class="popup-detail">
-                                    ${apt.elevator ? '✓ Elevator' : '✗ No Elevator'} • 
-                                    ${apt.parking ? '✓ Parking' : '✗ No Parking'}
-                                </div>
-                                <div class="popup-detail">
-                                    ${apt.visited ? '✓ Visited' : '⏳ Not visited'} • 
-                                    ${apt.shortlisted ? '★ Shortlisted' : ''}
-                                    ${apt.irrelevant ? '• Irrelevant' : ''}
-                                </div>
-                                <div class="popup-price">₪${apt.price.toLocaleString()}/month</div>
-                                <div class="popup-rating">${'★'.repeat(Math.round(avgRating))} (${avgRating.toFixed(1)})</div>
-                                <div class="popup-buttons">
-                                    <button class="btn btn-secondary" onclick="viewDetails('${apt.id}')">Details</button>
-                                    <button class="btn btn-primary" onclick="window.open('${getGoogleMapsLink(apt.address, apt.city)}', '_blank')">Google Maps</button>
-                                </div>
-                            </div>
-                        `);
-                    
-                    markers.push(marker);
-                    totalPrice += apt.price;
-                    count++;
-                }
-            }
-            
-            // Update statistics
-            document.getElementById('map-count').textContent = `${count} of ${apartmentArray.length}`;
-            document.getElementById('map-avg-price').textContent = count > 0 ? `₪${Math.round(totalPrice / count).toLocaleString()}` : '₪0';
-            
-            // Fit map to show all markers
-            if (markers.length > 0) {
-                const group = L.featureGroup(markers);
-                map.fitBounds(group.getBounds().pad(0.1));
-            }
-        }
-    </script>
-</body>
-</html>primary" onclick="applyFilters()">Apply Filters</button>
+                            <button class="btn btn-primary" onclick="applyFilters()">Apply Filters</button>
                         </div>
                     </div>
                 </div>
@@ -1226,19 +899,9 @@
                     
                     <div class="filter-section">
                         <h4>Map Filters</h4>
-                        <div class="form-group">
-                            <label for="map-filter-city">City</label>
-                            <select id="map-filter-city" onchange="updateMapMarkers()">
-                                <option value="">All Cities</option>
-                            </select>
-                        </div>
                         <div class="checkbox-group">
                             <input type="checkbox" id="map-filter-visited" onchange="updateMapMarkers()">
                             <label for="map-filter-visited">Visited Only</label>
-                        </div>
-                        <div class="checkbox-group">
-                            <input type="checkbox" id="map-filter-relevant" onchange="updateMapMarkers()" checked>
-                            <label for="map-filter-relevant">Hide Irrelevant</label>
                         </div>
                         <div class="checkbox-group">
                             <input type="checkbox" id="map-filter-parking" onchange="updateMapMarkers()">
@@ -1263,27 +926,6 @@
                 </div>
                 
                 <div id="map"></div>
-            </div>
-
-            <!-- Shortlist Tab -->
-            <div id="shortlist-tab" class="tab-content">
-                <div class="card">
-                    <div class="shortlist-header">
-                        <h2>My Shortlist</h2>
-                        <div class="shortlist-sort">
-                            <label>Sort by:</label>
-                            <select id="shortlist-sort" onchange="loadShortlist()">
-                                <option value="price-asc">Price (Low to High)</option>
-                                <option value="price-desc">Price (High to Low)</option>
-                                <option value="movein-asc">Move-in Date (Earliest)</option>
-                                <option value="movein-desc">Move-in Date (Latest)</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div id="shortlist-content">
-                        <div class="loading">Loading shortlisted apartments...</div>
-                    </div>
-                </div>
             </div>
         </div>
     </div>
@@ -1418,8 +1060,6 @@
                 apartments = snapshot.val() || {};
                 loadApartments();
                 updateSyncStatus(true);
-                updateShortlistBadge();
-                populateCityFilters();
             }, (error) => {
                 showMessage('error', 'Failed to load apartments: ' + error.message);
                 updateSyncStatus(false);
@@ -1482,7 +1122,6 @@
         document.addEventListener('DOMContentLoaded', function() {
             setupRatingListeners();
             setupFormListener();
-            setupShortlistCheckbox();
             
             // Enable offline persistence
             firebase.database().goOffline();
@@ -1524,8 +1163,6 @@
                 loadComparisonCheckboxes();
             } else if (tab === 'map') {
                 initializeMap();
-            } else if (tab === 'shortlist') {
-                loadShortlist();
             } else if (tab === 'add' && !editingId) {
                 // Reset form only if not editing
                 document.getElementById('apartment-form').reset();
@@ -1538,51 +1175,8 @@
                         star.style.color = '#ddd';
                     });
                 });
-                document.getElementById('shortlist-notes-group').style.display = 'none';
                 document.querySelector('#apartment-form button[type="submit"]').textContent = 'Save Apartment';
             }
-        }
-
-        // Setup shortlist checkbox listener
-        function setupShortlistCheckbox() {
-            const shortlistCheckbox = document.getElementById('shortlisted');
-            const shortlistNotesGroup = document.getElementById('shortlist-notes-group');
-            
-            shortlistCheckbox.addEventListener('change', function() {
-                shortlistNotesGroup.style.display = this.checked ? 'block' : 'none';
-            });
-        }
-
-        // Update shortlist badge
-        function updateShortlistBadge() {
-            const count = Object.values(apartments).filter(apt => apt.shortlisted).length;
-            const badge = document.getElementById('shortlist-count');
-            
-            if (count > 0) {
-                badge.textContent = count;
-                badge.style.display = 'inline-block';
-            } else {
-                badge.style.display = 'none';
-            }
-        }
-
-        // Populate city filters
-        function populateCityFilters() {
-            const cities = [...new Set(Object.values(apartments).map(apt => apt.city))].sort();
-            
-            // Update list view filter
-            const listCityFilter = document.getElementById('filter-city');
-            listCityFilter.innerHTML = '<option value="">All Cities</option>';
-            cities.forEach(city => {
-                listCityFilter.innerHTML += `<option value="${city}">${city}</option>`;
-            });
-            
-            // Update map view filter
-            const mapCityFilter = document.getElementById('map-filter-city');
-            mapCityFilter.innerHTML = '<option value="">All Cities</option>';
-            cities.forEach(city => {
-                mapCityFilter.innerHTML += `<option value="${city}">${city}</option>`;
-            });
         }
 
         // Rating system
@@ -1676,15 +1270,11 @@
                     vaad: parseInt(document.getElementById('vaad').value) || 0,
                     broker: document.getElementById('broker').checked,
                     visited: document.getElementById('visited').checked,
-                    irrelevant: document.getElementById('irrelevant').checked,
-                    shortlisted: document.getElementById('shortlisted').checked,
                     contactName: document.getElementById('contactName').value,
                     contactPhone: document.getElementById('contactPhone').value,
                     moveInDate: document.getElementById('moveInDate').value,
                     listingUrl: document.getElementById('listingUrl').value,
                     notes: document.getElementById('notes').value,
-                    visitNotes: document.getElementById('visitNotes').value,
-                    shortlistNotes: document.getElementById('shortlistNotes').value,
                     images: currentImages.length > 0 ? currentImages : (editingId && apartments[editingId] ? apartments[editingId].images : []),
                     ratings: {
                         condition: parseInt(document.querySelector('[data-rating="condition"]').getAttribute('data-value')) || 0,
@@ -1708,7 +1298,6 @@
                     currentImages = [];
                     editingId = null;
                     document.getElementById('image-preview').innerHTML = '';
-                    document.getElementById('shortlist-notes-group').style.display = 'none';
                     
                     // Reset all ratings
                     document.querySelectorAll('.rating-group').forEach(group => {
@@ -1748,16 +1337,12 @@
                 const avgRating = Object.values(apt.ratings).reduce((a, b) => a + b, 0) / Object.keys(apt.ratings).length;
                 
                 const card = document.createElement('div');
-                card.className = 'apartment-card' + (apt.irrelevant ? ' irrelevant' : '');
+                card.className = 'apartment-card';
                 card.innerHTML = `
-                    ${apt.irrelevant ? '<div class="irrelevant-badge">IRRELEVANT</div>' : ''}
                     <div class="apartment-header">
                         <div>
                             <div class="apartment-title">${apt.address}</div>
-                            <div style="color: #666; font-size: 14px;">
-                                ${apt.city} ${apt.visited ? '✓ Visited' : '⏳ Not visited'}
-                                ${apt.shortlisted ? '<span class="shortlist-badge" style="margin-left: 8px;">★ Shortlisted</span>' : ''}
-                            </div>
+                            <div style="color: #666; font-size: 14px;">${apt.city} ${apt.visited ? '✓ Visited' : '⏳ Not visited'}</div>
                         </div>
                         <div class="apartment-price">₪${apt.price}</div>
                     </div>
@@ -1775,15 +1360,11 @@
                             <span>${'★'.repeat(Math.round(avgRating))} (${avgRating.toFixed(1)})</span>
                         </div>
                     </div>
-                    ${apt.visitNotes ? `<div class="visit-notes-section" style="margin-top: 10px;">
-                        <strong>Visit/Contact Notes:</strong> ${apt.visitNotes}
-                    </div>` : ''}
                     <div style="margin-top: 15px;">
                         <button class="btn btn-secondary" onclick="viewDetails('${apt.id}')">View Details</button>
                         ${apt.listingUrl ? `<button class="btn btn-success" onclick="window.open('${apt.listingUrl}', '_blank')">View Listing</button>` : ''}
                         <button class="btn btn-primary" onclick="editApartment('${apt.id}')">Edit</button>
                         <button class="btn btn-danger" onclick="deleteApartment('${apt.id}')">Delete</button>
-                        <button class="btn ${apt.irrelevant ? 'btn-success' : 'btn-warning'}" onclick="toggleIrrelevant('${apt.id}')">${apt.irrelevant ? 'Mark Relevant' : 'Mark Irrelevant'}</button>
                         <a href="${getGoogleMapsLink(apt.address, apt.city)}" target="_blank" class="google-maps-link">
                             📍 Open in Google Maps
                         </a>
@@ -1791,27 +1372,6 @@
                 `;
                 list.appendChild(card);
             });
-        }
-
-        // Toggle irrelevant status
-        async function toggleIrrelevant(id) {
-            const apt = apartments[id];
-            if (!apt) return;
-            
-            apt.irrelevant = !apt.irrelevant;
-            apt.updatedAt = Date.now();
-            
-            // If marking as irrelevant, remove from shortlist
-            if (apt.irrelevant) {
-                apt.shortlisted = false;
-            }
-            
-            try {
-                await saveApartmentToFirebase(apt, id);
-                showMessage('success', 'Apartment status updated!');
-            } catch (error) {
-                showMessage('error', 'Failed to update status: ' + error.message);
-            }
         }
 
         // View apartment details
@@ -1903,11 +1463,7 @@
                     </div>
                 </div>
                 
-                ${apt.notes ? `<div><strong>General Notes:</strong><br>${apt.notes}</div>` : ''}
-                ${apt.visitNotes ? `<div style="margin-top: 15px;"><strong>Visit/Contact Notes:</strong><br>${apt.visitNotes}</div>` : ''}
-                ${apt.shortlistNotes && apt.shortlisted ? `<div style="margin-top: 15px;"><strong>Shortlist Notes:</strong><br>${apt.shortlistNotes}</div>` : ''}
-                ${apt.irrelevant ? '<div style="margin-top: 15px; color: #dc3545;"><strong>Status:</strong> Marked as Irrelevant</div>' : ''}
-                ${apt.shortlisted ? '<div style="margin-top: 15px; color: #667eea;"><strong>Status:</strong> On Shortlist</div>' : ''}
+                ${apt.notes ? `<div><strong>Notes:</strong><br>${apt.notes}</div>` : ''}
                 
                 ${apt.images && apt.images.length > 0 ? `
                     <h3 style="margin-top: 20px;">Images</h3>
@@ -1965,18 +1521,11 @@
             document.getElementById('vaad').value = apt.vaad || '';
             document.getElementById('broker').checked = apt.broker;
             document.getElementById('visited').checked = apt.visited || false;
-            document.getElementById('irrelevant').checked = apt.irrelevant || false;
-            document.getElementById('shortlisted').checked = apt.shortlisted || false;
             document.getElementById('contactName').value = apt.contactName || '';
             document.getElementById('contactPhone').value = apt.contactPhone || '';
             document.getElementById('moveInDate').value = apt.moveInDate || '';
             document.getElementById('listingUrl').value = apt.listingUrl || '';
             document.getElementById('notes').value = apt.notes || '';
-            document.getElementById('visitNotes').value = apt.visitNotes || '';
-            document.getElementById('shortlistNotes').value = apt.shortlistNotes || '';
-            
-            // Show/hide shortlist notes based on checkbox
-            document.getElementById('shortlist-notes-group').style.display = apt.shortlisted ? 'block' : 'none';
             
             // Set ratings
             Object.entries(apt.ratings).forEach(([rating, value]) => {
@@ -2016,11 +1565,10 @@
 
         // Filter apartments
         function applyFilters() {
-            const cityFilter = document.getElementById('filter-city').value;
+            const cityFilter = document.getElementById('filter-city').value.toLowerCase();
             const maxPrice = parseInt(document.getElementById('filter-max-price').value) || Infinity;
             const minRating = parseInt(document.getElementById('filter-min-rating').value) || 0;
             const visitedFilter = document.getElementById('filter-visited').value;
-            const relevanceFilter = document.getElementById('filter-relevance').value;
             
             const apartmentArray = Object.entries(apartments).map(([id, data]) => ({
                 id,
@@ -2029,11 +1577,10 @@
             
             const filtered = apartmentArray.filter(apt => {
                 const avgRating = Object.values(apt.ratings).reduce((a, b) => a + b, 0) / Object.keys(apt.ratings).length;
-                const cityMatch = !cityFilter || apt.city === cityFilter;
+                const cityMatch = !cityFilter || apt.city.toLowerCase().includes(cityFilter);
                 const priceMatch = apt.price <= maxPrice;
                 const ratingMatch = avgRating >= minRating;
                 let visitedMatch = true;
-                let relevanceMatch = true;
                 
                 if (visitedFilter === 'visited') {
                     visitedMatch = apt.visited === true;
@@ -2041,13 +1588,7 @@
                     visitedMatch = apt.visited !== true;
                 }
                 
-                if (relevanceFilter === 'relevant') {
-                    relevanceMatch = !apt.irrelevant;
-                } else if (relevanceFilter === 'irrelevant') {
-                    relevanceMatch = apt.irrelevant === true;
-                }
-                
-                return cityMatch && priceMatch && ratingMatch && visitedMatch && relevanceMatch;
+                return cityMatch && priceMatch && ratingMatch && visitedMatch;
             });
             
             const list = document.getElementById('apartments-list');
@@ -2063,16 +1604,12 @@
                 const avgRating = Object.values(apt.ratings).reduce((a, b) => a + b, 0) / Object.keys(apt.ratings).length;
                 
                 const card = document.createElement('div');
-                card.className = 'apartment-card' + (apt.irrelevant ? ' irrelevant' : '');
+                card.className = 'apartment-card';
                 card.innerHTML = `
-                    ${apt.irrelevant ? '<div class="irrelevant-badge">IRRELEVANT</div>' : ''}
                     <div class="apartment-header">
                         <div>
                             <div class="apartment-title">${apt.address}</div>
-                            <div style="color: #666; font-size: 14px;">
-                                ${apt.city} ${apt.visited ? '✓ Visited' : '⏳ Not visited'}
-                                ${apt.shortlisted ? '<span class="shortlist-badge" style="margin-left: 8px;">★ Shortlisted</span>' : ''}
-                            </div>
+                            <div style="color: #666; font-size: 14px;">${apt.city} ${apt.visited ? '✓ Visited' : '⏳ Not visited'}</div>
                         </div>
                         <div class="apartment-price">₪${apt.price}</div>
                     </div>
@@ -2089,15 +1626,11 @@
                             <span>${'★'.repeat(Math.round(avgRating))} (${avgRating.toFixed(1)})</span>
                         </div>
                     </div>
-                    ${apt.visitNotes ? `<div class="visit-notes-section" style="margin-top: 10px;">
-                        <strong>Visit/Contact Notes:</strong> ${apt.visitNotes}
-                    </div>` : ''}
                     <div style="margin-top: 15px;">
                         <button class="btn btn-secondary" onclick="viewDetails('${apt.id}')">View Details</button>
                         ${apt.listingUrl ? `<button class="btn btn-success" onclick="window.open('${apt.listingUrl}', '_blank')">View Listing</button>` : ''}
                         <button class="btn btn-primary" onclick="editApartment('${apt.id}')">Edit</button>
                         <button class="btn btn-danger" onclick="deleteApartment('${apt.id}')">Delete</button>
-                        <button class="btn ${apt.irrelevant ? 'btn-success' : 'btn-warning'}" onclick="toggleIrrelevant('${apt.id}')">${apt.irrelevant ? 'Mark Relevant' : 'Mark Irrelevant'}</button>
                         <a href="${getGoogleMapsLink(apt.address, apt.city)}" target="_blank" class="google-maps-link">
                             📍 Open in Google Maps
                         </a>
@@ -2112,10 +1645,10 @@
             const headers = [
                 'Address', 'City', 'Floor', 'Size (m²)', 'Divided', 'Parking Permit',
                 'Shelter', 'Elevator', 'Parking', 'Price', 'Arnona', 'Vaad', 'Total Monthly',
-                'Broker', 'Visited', 'Irrelevant', 'Shortlisted', 'Contact Name', 'Contact Phone', 
-                'Move-in Date', 'Listing URL', 'Condition Rating', 'Leisure Location Rating', 
-                'Work Location Rating', 'Area Parking Rating', 'Noise Rating', 'Neighbors Rating', 
-                'Privacy Rating', 'Average Rating', 'General Notes', 'Visit/Contact Notes', 'Shortlist Notes'
+                'Broker', 'Visited', 'Contact Name', 'Contact Phone', 'Move-in Date', 'Listing URL',
+                'Condition Rating', 'Leisure Location Rating', 'Work Location Rating',
+                'Area Parking Rating', 'Noise Rating', 'Neighbors Rating', 'Privacy Rating',
+                'Average Rating', 'Notes'
             ];
             
             const apartmentArray = Object.entries(apartments).map(([id, data]) => ({
@@ -2143,8 +1676,6 @@
                     totalCost,
                     apt.broker ? 'Yes' : 'No',
                     apt.visited ? 'Yes' : 'No',
-                    apt.irrelevant ? 'Yes' : 'No',
-                    apt.shortlisted ? 'Yes' : 'No',
                     apt.contactName || '',
                     apt.contactPhone || '',
                     apt.moveInDate || '',
@@ -2157,9 +1688,7 @@
                     apt.ratings.neighbors || 0,
                     apt.ratings.privacy || 0,
                     avgRating.toFixed(1),
-                    apt.notes || '',
-                    apt.visitNotes || '',
-                    apt.shortlistNotes || ''
+                    apt.notes || ''
                 ].map(val => `"${val}"`).join(',');
             });
             
@@ -2188,7 +1717,7 @@
                 div.className = 'checkbox-group';
                 div.innerHTML = `
                     <input type="checkbox" id="compare-${apt.id}" value="${apt.id}">
-                    <label for="compare-${apt.id}">${apt.address}, ${apt.city} - ₪${apt.price}${apt.irrelevant ? ' (Irrelevant)' : ''}</label>
+                    <label for="compare-${apt.id}">${apt.address}, ${apt.city} - ₪${apt.price}</label>
                 `;
                 container.appendChild(div);
             });
@@ -2223,7 +1752,6 @@
                                 <th onclick="sortTable('size')">Size (m²) <span class="sort-indicator">${getSortIndicator('size')}</span></th>
                                 <th onclick="sortTable('avgRating')">Avg Rating <span class="sort-indicator">${getSortIndicator('avgRating')}</span></th>
                                 <th onclick="sortTable('moveInDate')">Move-in <span class="sort-indicator">${getSortIndicator('moveInDate')}</span></th>
-                                <th>Status</th>
                                 <th>Visited</th>
                                 <th>Elevator</th>
                                 <th>Parking</th>
@@ -2256,7 +1784,6 @@
                         <td>${apt.size || 'N/A'}</td>
                         <td>${'★'.repeat(Math.round(avgRating))} (${avgRating.toFixed(1)})</td>
                         <td>${apt.moveInDate ? new Date(apt.moveInDate).toLocaleDateString('en-GB') : 'N/A'}</td>
-                        <td>${apt.irrelevant ? '<span style="color: #dc3545;">Irrelevant</span>' : apt.shortlisted ? '<span style="color: #667eea;">Shortlisted</span>' : 'Active'}</td>
                         <td>${apt.visited ? '✓' : '⏳'}</td>
                         <td>${apt.elevator ? '✓' : '✗'}</td>
                         <td>${apt.parking ? '✓' : '✗'}</td>
@@ -2344,97 +1871,6 @@
             return '';
         }
 
-        // Load shortlist
-        function loadShortlist() {
-            const content = document.getElementById('shortlist-content');
-            const sortBy = document.getElementById('shortlist-sort').value;
-            
-            const shortlistedApts = Object.entries(apartments)
-                .filter(([id, apt]) => apt.shortlisted && !apt.irrelevant)
-                .map(([id, data]) => ({ id, ...data }));
-            
-            if (shortlistedApts.length === 0) {
-                content.innerHTML = '<div class="loading">No apartments in your shortlist yet.</div>';
-                return;
-            }
-            
-            // Sort shortlisted apartments
-            shortlistedApts.sort((a, b) => {
-                switch(sortBy) {
-                    case 'price-asc':
-                        return (a.price + a.arnona + a.vaad) - (b.price + b.arnona + b.vaad);
-                    case 'price-desc':
-                        return (b.price + b.arnona + b.vaad) - (a.price + a.arnona + a.vaad);
-                    case 'movein-asc':
-                        return (a.moveInDate || '9999') > (b.moveInDate || '9999') ? 1 : -1;
-                    case 'movein-desc':
-                        return (b.moveInDate || '0000') > (a.moveInDate || '0000') ? 1 : -1;
-                    default:
-                        return 0;
-                }
-            });
-            
-            content.innerHTML = shortlistedApts.map(apt => {
-                const totalCost = apt.price + apt.arnona + apt.vaad;
-                return `
-                    <div class="shortlist-item">
-                        <h3>${apt.address}, ${apt.city}</h3>
-                        <div class="shortlist-details">
-                            <div class="shortlist-detail-item">
-                                <span class="shortlist-detail-label">Total Monthly Cost</span>
-                                <span class="shortlist-detail-value">₪${totalCost}</span>
-                                <small style="color: #666;">Rent: ₪${apt.price} + Arnona: ₪${apt.arnona} + Committee: ₪${apt.vaad}</small>
-                            </div>
-                            <div class="shortlist-detail-item">
-                                <span class="shortlist-detail-label">Contact Person</span>
-                                <span class="shortlist-detail-value">${apt.contactName || 'Not provided'}</span>
-                            </div>
-                            <div class="shortlist-detail-item">
-                                <span class="shortlist-detail-label">Phone Number</span>
-                                <span class="shortlist-detail-value">${apt.contactPhone || 'Not provided'}</span>
-                            </div>
-                            <div class="shortlist-detail-item">
-                                <span class="shortlist-detail-label">Move-in Date</span>
-                                <span class="shortlist-detail-value">${apt.moveInDate ? new Date(apt.moveInDate).toLocaleDateString('en-GB') : 'Not specified'}</span>
-                            </div>
-                        </div>
-                        ${apt.shortlistNotes ? `<div class="shortlist-notes">
-                            <strong>Notes:</strong> ${apt.shortlistNotes}
-                        </div>` : ''}
-                        <div style="margin-top: 15px; display: flex; gap: 10px; flex-wrap: wrap;">
-                            ${apt.listingUrl ? `<button class="btn btn-success" onclick="window.open('${apt.listingUrl}', '_blank')">View Listing</button>` : ''}
-                            <button class="btn btn-primary" onclick="editApartment('${apt.id}')">Edit</button>
-                            <button class="btn btn-secondary" onclick="viewDetails('${apt.id}')">View Details</button>
-                            <button class="btn btn-warning" onclick="removeFromShortlist('${apt.id}')">Remove from Shortlist</button>
-                            <a href="${getGoogleMapsLink(apt.address, apt.city)}" target="_blank" class="google-maps-link">
-                                📍 Open in Google Maps
-                            </a>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-        }
-
-        // Remove from shortlist
-        async function removeFromShortlist(id) {
-            const apt = apartments[id];
-            if (!apt) return;
-            
-            if (confirm('Remove this apartment from your shortlist?')) {
-                apt.shortlisted = false;
-                apt.shortlistNotes = '';
-                apt.updatedAt = Date.now();
-                
-                try {
-                    await saveApartmentToFirebase(apt, id);
-                    showMessage('success', 'Removed from shortlist!');
-                    loadShortlist();
-                } catch (error) {
-                    showMessage('error', 'Failed to update: ' + error.message);
-                }
-            }
-        }
-
         // ========================================
         // Map Functions
         // ========================================
@@ -2517,9 +1953,7 @@
             markers = [];
             
             // Get filter states
-            const cityFilter = document.getElementById('map-filter-city').value;
             const visitedOnly = document.getElementById('map-filter-visited').checked;
-            const hideIrrelevant = document.getElementById('map-filter-relevant').checked;
             const parkingOnly = document.getElementById('map-filter-parking').checked;
             const elevatorOnly = document.getElementById('map-filter-elevator').checked;
             
@@ -2530,9 +1964,7 @@
             
             // Filter apartments
             const filtered = apartmentArray.filter(apt => {
-                if (cityFilter && apt.city !== cityFilter) return false;
                 if (visitedOnly && !apt.visited) return false;
-                if (hideIrrelevant && apt.irrelevant) return false;
                 if (parkingOnly && !apt.parking) return false;
                 if (elevatorOnly && !apt.elevator) return false;
                 return true;
@@ -2566,11 +1998,6 @@
                                 <div class="popup-detail">
                                     ${apt.elevator ? '✓ Elevator' : '✗ No Elevator'} • 
                                     ${apt.parking ? '✓ Parking' : '✗ No Parking'}
-                                </div>
-                                <div class="popup-detail">
-                                    ${apt.visited ? '✓ Visited' : '⏳ Not visited'} • 
-                                    ${apt.shortlisted ? '★ Shortlisted' : ''}
-                                    ${apt.irrelevant ? '• Irrelevant' : ''}
                                 </div>
                                 <div class="popup-price">₪${apt.price.toLocaleString()}/month</div>
                                 <div class="popup-rating">${'★'.repeat(Math.round(avgRating))} (${avgRating.toFixed(1)})</div>
